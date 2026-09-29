@@ -882,10 +882,13 @@ func UpdateSelf(c *gin.Context) {
 	}
 
 	cleanUser := model.User{
-		Id:          c.GetInt("id"),
-		Username:    user.Username,
-		Password:    user.Password,
-		DisplayName: user.DisplayName,
+		Id:            c.GetInt("id"),
+		Username:      user.Username,
+		Password:      user.Password,
+		DisplayName:   user.DisplayName,
+		Email:         user.Email,
+		Mobile:        user.Mobile,
+		EmailVerified: user.EmailVerified,
 	}
 	if user.Password != "" {
 		identity, ok := middleware.GetSessionAuthIdentity(c)

@@ -618,7 +618,7 @@ func GetSelfUserById(id int) (*User, error) {
 		HasPassword bool `gorm:"column:has_password"`
 	}
 	err := DB.Model(&User{}).Select([]string{
-		"id", "username", "display_name", "role", "status", "email",
+		"id", "username", "display_name", "role", "status", "email", "mobile", "email_verified",
 		"github_id", "discord_id", "oidc_id", "wechat_id", "telegram_id",
 		"group", "quota", "used_quota", "request_count", "aff_code", "aff_count",
 		"aff_quota", "aff_history", "inviter_id", "linux_do_id", "setting",
@@ -991,20 +991,46 @@ func (user *User) EditWithTx(tx *gorm.DB, updatePassword bool) error {
 	}
 
 	newUser := *user
+	current := User{}
+	if err = tx.First(&current, user.Id).Error; err != nil {
+		return err
+	}
+	if newUser.Email != "" {
+		newUser.Email = NormalizeEmail(newUser.Email)
+		if newUser.Email == "" {
+			return ErrAuthFlowInvalid
+		}
+		if err = ensureEmailAvailableWithTx(tx, newUser.Email, user.Id); err != nil {
+			return err
+		}
+	}
+	if newUser.Mobile != nil {
+		normalizedMobile, mobileErr := NormalizeE164Mobile(*newUser.Mobile)
+		if mobileErr != nil {
+			return mobileErr
+		}
+		newUser.Mobile = &normalizedMobile
+		if err = ensureMobileAvailableWithTx(tx, normalizedMobile, user.Id); err != nil {
+			return err
+		}
+	}
 	updates := map[string]any{
 		"username":     newUser.Username,
 		"display_name": newUser.DisplayName,
 		"group":        newUser.Group,
 		"remark":       newUser.Remark,
 	}
+	if newUser.Email != "" {
+		updates["email"] = newUser.Email
+		updates["email_verified"] = newUser.EmailVerified
+	}
+	if newUser.Mobile != nil {
+		updates["mobile"] = newUser.Mobile
+	}
 	if updatePassword {
 		updates["password"] = newUser.Password
 	}
 
-	current := User{}
-	if err = tx.First(&current, user.Id).Error; err != nil {
-		return err
-	}
 	authChanged := (updatePassword && current.Password != newUser.Password) || current.Group != newUser.Group
 	if authChanged {
 		newUser.AuthVersion, err = IncrementUserAuthVersionWithTx(tx, user.Id)
