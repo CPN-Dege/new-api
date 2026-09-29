@@ -32,7 +32,8 @@ export const loginFormSchema = z.object({
 export const registerFormSchema = z
   .object({
     username: z.string().min(1, 'Please enter your username'),
-    email: z.string().optional(),
+    email: z.string().email('Please enter a valid email address'),
+    mobile: z.string().regex(/^\+[1-9]\d{7,14}$/, 'Enter a valid mobile number in E.164 format, for example +628123456789'),
     password: accountPasswordSchema,
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })

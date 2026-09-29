@@ -14,6 +14,8 @@ var (
 	ErrEmailAlreadyTaken    = errors.New("email already taken")
 	ErrEmailNotFound        = errors.New("email not found")
 	ErrEmailAmbiguous       = errors.New("email matches multiple users")
+	ErrMobileInvalid        = errors.New("mobile number must use international E.164 format")
+	ErrMobileAlreadyTaken   = errors.New("mobile number already taken")
 )
 
 // Token auth errors

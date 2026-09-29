@@ -3,11 +3,13 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/i18n"
@@ -17,8 +19,8 @@ import (
 	"github.com/QuantumNous/new-api/relaykit/dto"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/service/authz"
-	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
+	"github.com/QuantumNous/new-api/setting/system_setting"
 
 	"github.com/QuantumNous/new-api/constant"
 
@@ -31,6 +33,13 @@ type LoginRequest struct {
 	Password          string `json:"password"`
 	PasswordEncrypted string `json:"password_encrypted"`
 	EncryptionKeyID   string `json:"encryption_key_id"`
+}
+
+func valueOrEmpty(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func GetPasswordEncryptionKey(c *gin.Context) {
@@ -239,28 +248,19 @@ func Register(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgUserInputInvalid, map[string]any{"Error": err.Error()})
 		return
 	}
-	if common.EmailVerificationEnabled {
-		if user.Email == "" || user.VerificationCode == "" {
-			common.ApiErrorI18n(c, i18n.MsgUserEmailVerificationRequired)
-			return
-		}
-		if !common.VerifyCodeWithKey(user.Email, user.VerificationCode, common.EmailVerificationPurpose) {
-			common.ApiErrorI18n(c, i18n.MsgUserVerificationCodeError)
-			return
-		}
-		if err := model.EnsureEmailAvailable(user.Email, 0); err != nil {
-			if errors.Is(err, model.ErrEmailAlreadyTaken) {
-				common.ApiErrorI18n(c, i18n.MsgUserEmailAlreadyTaken)
-				return
-			}
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
-			return
-		}
+	if user.Email == "" {
+		common.ApiErrorI18n(c, i18n.MsgUserEmailVerificationRequired)
+		return
 	}
-	emailForExistCheck := ""
-	if common.EmailVerificationEnabled {
-		emailForExistCheck = user.Email
+	if err := model.EnsureEmailAvailable(user.Email, 0); err != nil {
+		if errors.Is(err, model.ErrEmailAlreadyTaken) {
+			common.ApiErrorI18n(c, i18n.MsgUserEmailAlreadyTaken)
+			return
+		}
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
 	}
+	emailForExistCheck := user.Email
 	exist, err := model.CheckUserExistOrDeleted(user.Username, emailForExistCheck)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -268,27 +268,81 @@ func Register(c *gin.Context) {
 		return
 	}
 	if exist {
-		common.ApiErrorI18n(c, i18n.MsgUserExists)
+		mobile, mobileErr := model.NormalizeE164Mobile(valueOrEmpty(user.Mobile))
+		if mobileErr != nil {
+			common.ApiErrorI18n(c, i18n.MsgUserExists)
+			return
+		}
+		confirmationToken, pendingUser, retryErr := model.RetryPendingRegistrationConfirmation(user.Email, mobile, time.Now().Add(time.Duration(common.VerificationValidMinutes)*time.Minute))
+		if retryErr != nil {
+			common.ApiErrorI18n(c, i18n.MsgUserExists)
+			return
+		}
+		link := fmt.Sprintf("%s/api/user/confirm-email?token=%s", strings.TrimRight(system_setting.ServerAddress, "/"), url.QueryEscape(confirmationToken))
+		subject := fmt.Sprintf("%s — Confirm your email address", common.SystemName)
+		content := fmt.Sprintf("<p>Welcome to %s.</p><p><a href='%s'>Verify Email</a></p><p>This single-use link expires in %d minutes. If you did not create this account, ignore this email.</p>", common.SystemName, html.EscapeString(link), common.VerificationValidMinutes)
+		if sendErr := common.SendEmail(subject, pendingUser.Email, content); sendErr != nil {
+			common.ApiErrorMsg(c, "We could not resend the verification email. Please retry later.")
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Account is pending. A new verification email has been sent."})
 		return
 	}
 	affCode := user.AffCode // this code is the inviter's code, not the user's own code
 	inviterId, _ := model.GetUserIdByAffCode(affCode)
 	cleanUser := model.User{
-		Username:    user.Username,
-		Password:    user.Password,
-		DisplayName: user.Username,
-		InviterId:   inviterId,
-		Role:        common.RoleCommonUser, // 明确设置角色为普通用户
+		Username:      user.Username,
+		Password:      user.Password,
+		DisplayName:   user.Username,
+		Email:         user.Email,
+		EmailVerified: false,
+		Status:        common.UserStatusDisabled,
+		InviterId:     inviterId,
+		Role:          common.RoleCommonUser,
 	}
-	if common.EmailVerificationEnabled {
-		cleanUser.Email = user.Email
+	mobile, err := model.NormalizeE164Mobile(valueOrEmpty(user.Mobile))
+	if err != nil {
+		common.ApiErrorMsg(c, err.Error())
+		return
 	}
-	if err := cleanUser.Insert(inviterId); err != nil {
+	if err := model.EnsureMobileAvailable(mobile, 0); err != nil {
+		common.ApiErrorMsg(c, err.Error())
+		return
+	}
+	cleanUser.Mobile = &mobile
+	confirmationPayload, err := common.Marshal(map[string]string{"email": cleanUser.Email})
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
+	}
+	confirmationToken, _, err := cleanUser.InsertPendingWithAuthFlow(inviterId, model.AuthFlowCreate{
+		Purpose:   model.AuthFlowPurposeEmailConfirmation,
+		Payload:   string(confirmationPayload),
+		ExpiresAt: time.Now().Add(time.Duration(common.VerificationValidMinutes) * time.Minute),
+	})
+	if err != nil {
 		if errors.Is(err, model.ErrEmailAlreadyTaken) {
 			common.ApiErrorI18n(c, i18n.MsgUserEmailAlreadyTaken)
 			return
 		}
+		if errors.Is(err, model.ErrMobileInvalid) || errors.Is(err, model.ErrMobileAlreadyTaken) {
+			common.ApiErrorMsg(c, err.Error())
+			return
+		}
 		common.ApiError(c, err)
+		return
+	}
+	link := fmt.Sprintf("%s/api/user/confirm-email?token=%s", strings.TrimRight(system_setting.ServerAddress, "/"), url.QueryEscape(confirmationToken))
+	subject := fmt.Sprintf("%s — Confirm your email address", common.SystemName)
+	content := fmt.Sprintf("<p>Welcome to %s.</p><p><a href='%s'>Verify Email</a></p><p>This single-use link expires in %d minutes. If you did not create this account, ignore this email.</p>", common.SystemName, html.EscapeString(link), common.VerificationValidMinutes)
+	if err := common.SendEmail(subject, cleanUser.Email, content); err != nil {
+		cleanupErr := model.DeletePendingRegistration(cleanUser.Id)
+		if cleanupErr != nil {
+			logger.LogError(c.Request.Context(), "verification email failed and pending registration cleanup failed")
+			common.ApiErrorMsg(c, "We could not send the verification email. Contact support before retrying.")
+			return
+		}
+		common.ApiErrorMsg(c, "We could not send the verification email. Please retry registration.")
 		return
 	}
 
@@ -299,29 +353,9 @@ func Register(c *gin.Context) {
 		return
 	}
 	// 生成默认令牌
-	if constant.GenerateDefaultToken {
-		key, err := common.GenerateKey()
-		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgUserDefaultTokenFailed)
-			common.SysLog("failed to generate token key: " + err.Error())
-			return
-		}
-		// 生成默认令牌
-		token := model.Token{
-			UserId:             insertedUser.Id, // 使用插入后的用户ID
-			Name:               cleanUser.Username + "的初始令牌",
-			Key:                key,
-			CreatedTime:        common.GetTimestamp(),
-			AccessedTime:       common.GetTimestamp(),
-			ExpiredTime:        -1,     // 永不过期
-			RemainQuota:        500000, // 示例额度
-			UnlimitedQuota:     true,
-			ModelLimitsEnabled: false,
-		}
-		if setting.DefaultUseAutoGroup {
-			token.Group = "auto"
-		}
-		if err := token.Insert(); err != nil {
+	registrationPending := cleanUser.Status == common.UserStatusDisabled && !cleanUser.EmailVerified
+	if !registrationPending && constant.GenerateDefaultToken {
+		if err := model.CreateDefaultTokenForUser(insertedUser); err != nil {
 			common.ApiErrorI18n(c, i18n.MsgCreateDefaultTokenErr)
 			return
 		}
@@ -329,7 +363,7 @@ func Register(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "",
+		"message": "Account created. Check your email and click Verify Email before signing in.",
 	})
 	return
 }
@@ -500,6 +534,8 @@ func buildSelfUserData(user *model.User) map[string]any {
 		"role":              user.Role,
 		"status":            user.Status,
 		"email":             user.Email,
+		"mobile":            user.Mobile,
+		"email_verified":    user.EmailVerified,
 		"github_id":         user.GitHubId,
 		"discord_id":        user.DiscordId,
 		"oidc_id":           user.OidcId,

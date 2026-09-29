@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/relaykit/dto"
+	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 
 	"github.com/bytedance/gopkg/util/gopool"
@@ -86,6 +89,8 @@ type User struct {
 	Role                 int                        `json:"role" gorm:"type:int;default:1"`   // admin, common
 	Status               int                        `json:"status" gorm:"type:int;default:1"` // enabled, disabled
 	Email                string                     `json:"email" gorm:"index" validate:"max=50"`
+	Mobile               *string                    `json:"mobile,omitempty" gorm:"type:varchar(16);uniqueIndex"`
+	EmailVerified        bool                       `json:"email_verified" gorm:"not null;default:false"`
 	GitHubId             string                     `json:"github_id" gorm:"column:github_id;index"`
 	DiscordId            string                     `json:"discord_id" gorm:"column:discord_id;index"`
 	OidcId               string                     `json:"oidc_id" gorm:"column:oidc_id;index"`
@@ -326,6 +331,41 @@ func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
+func NormalizeE164Mobile(mobile string) (string, error) {
+	mobile = strings.TrimSpace(mobile)
+	if len(mobile) < 9 || len(mobile) > 16 || mobile[0] != '+' || mobile[1] < '1' || mobile[1] > '9' {
+		return "", ErrMobileInvalid
+	}
+	for _, char := range mobile[2:] {
+		if char < '0' || char > '9' {
+			return "", ErrMobileInvalid
+		}
+	}
+	return mobile, nil
+}
+
+func EnsureMobileAvailable(mobile string, excludeUserID int) error {
+	return ensureMobileAvailableWithTx(DB, mobile, excludeUserID)
+}
+
+func ensureMobileAvailableWithTx(tx *gorm.DB, mobile string, excludeUserID int) error {
+	if _, err := NormalizeE164Mobile(mobile); err != nil {
+		return err
+	}
+	query := tx.Unscoped().Model(&User{}).Where("mobile = ?", mobile)
+	if excludeUserID > 0 {
+		query = query.Where("id <> ?", excludeUserID)
+	}
+	var count int64
+	if err := query.Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return ErrMobileAlreadyTaken
+	}
+	return nil
+}
+
 func emailQuery(tx *gorm.DB, email string) *gorm.DB {
 	if tx == nil {
 		tx = DB
@@ -518,6 +558,41 @@ func SearchUsers(keyword string, group string, role *int, status *int, startIdx 
 	return users, total, nil
 }
 
+func RetryPendingRegistrationConfirmation(email, mobile string, expiresAt time.Time) (string, *User, error) {
+	email = NormalizeEmail(email)
+	mobile, err := NormalizeE164Mobile(mobile)
+	if err != nil {
+		return "", nil, err
+	}
+	var token string
+	var user User
+	err = DB.Transaction(func(tx *gorm.DB) error {
+		query := tx.Where("LOWER(email) = ? AND mobile = ? AND status = ? AND email_verified = ?", email, mobile, common.UserStatusDisabled, false)
+		if err := lockForUpdate(query).First(&user).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("user_id = ? AND purpose = ? AND consumed_at IS NULL", user.Id, AuthFlowPurposeEmailConfirmation).Delete(&AuthFlow{}).Error; err != nil {
+			return err
+		}
+		payload, err := common.Marshal(map[string]string{"email": email})
+		if err != nil {
+			return err
+		}
+		var createErr error
+		token, _, createErr = CreateAuthFlowWithTx(tx, AuthFlowCreate{
+			Purpose:   AuthFlowPurposeEmailConfirmation,
+			UserId:    user.Id,
+			Payload:   string(payload),
+			ExpiresAt: expiresAt,
+		})
+		return createErr
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return token, &user, nil
+}
+
 func GetUserById(id int, selectAll bool) (*User, error) {
 	if id == 0 {
 		return nil, errors.New("id 为空！")
@@ -706,6 +781,35 @@ func (user *User) Insert(inviterId int) error {
 
 	user.finishInsert(inviterId)
 	return nil
+}
+
+func (user *User) InsertPendingWithAuthFlow(inviterId int, flow AuthFlowCreate) (string, *AuthFlow, error) {
+	var token string
+	var createdFlow *AuthFlow
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		if err := withNormalizedEmailLock(tx, user.Email, func(tx *gorm.DB) error {
+			if err := user.prepareForInsert(tx); err != nil {
+				return err
+			}
+			user.Quota = common.QuotaForNewUser
+			user.AffCode = common.GetRandomString(4)
+			if user.Setting == "" {
+				user.SetSetting(dto.UserSetting{})
+			}
+			return tx.Create(user).Error
+		}); err != nil {
+			return err
+		}
+		flow.UserId = user.Id
+		var err error
+		token, createdFlow, err = CreateAuthFlowWithTx(tx, flow)
+		return err
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	user.finishInsert(inviterId)
+	return token, createdFlow, nil
 }
 
 func (user *User) finishInsert(inviterId int) {
@@ -1210,6 +1314,145 @@ func ResetUserPasswordByEmail(email string, password string) error {
 	}
 	_, err = RevokeAllUserSessions(user.Id, "password_reset")
 	return err
+}
+
+func ResetPasswordWithToken(email, token, password string) error {
+	email = NormalizeEmail(email)
+	if email == "" || token == "" || common.ValidateNewAccountPassword(password) != nil {
+		return ErrAuthFlowInvalid
+	}
+	user, err := GetUniqueUserByEmail(email)
+	if err != nil {
+		return ErrAuthFlowInvalid
+	}
+	hashed, err := common.HashAccountPassword(password)
+	if err != nil {
+		return err
+	}
+	_, err = ConsumeAuthFlowWithAction(token, AuthFlowMatch{Purpose: AuthFlowPurposePasswordReset, UserId: user.Id}, func(tx *gorm.DB, flow *AuthFlow) error {
+		var payload struct {
+			Email string `json:"email"`
+		}
+		if common.Unmarshal([]byte(flow.Payload), &payload) != nil || NormalizeEmail(payload.Email) != email {
+			return ErrAuthFlowInvalid
+		}
+		nextVersion, err := IncrementUserAuthVersionWithTx(tx, user.Id)
+		if err != nil {
+			return err
+		}
+		if err := tx.Model(&AuthFlow{}).
+			Where("user_id = ? AND purpose = ? AND id <> ? AND consumed_at IS NULL", user.Id, AuthFlowPurposePasswordReset, flow.Id).
+			Update("consumed_at", time.Now()).Error; err != nil {
+			return err
+		}
+		user.AuthVersion = nextVersion
+		return tx.Model(&User{}).Where("id = ?", user.Id).Update("password", hashed).Error
+	})
+	if err != nil {
+		return err
+	}
+	if err := PublishUserAuthCache(user.Id); err != nil {
+		return err
+	}
+	_, err = RevokeAllUserSessions(user.Id, "password_reset")
+	return err
+}
+
+func ConfirmRegistrationEmailAndProvision(token string) (*User, error) {
+	var user User
+	_, err := ConsumeAuthFlowWithAction(token, AuthFlowMatch{Purpose: AuthFlowPurposeEmailConfirmation}, func(tx *gorm.DB, consumed *AuthFlow) error {
+		var payload struct {
+			Email string `json:"email"`
+		}
+		if common.Unmarshal([]byte(consumed.Payload), &payload) != nil {
+			return ErrAuthFlowInvalid
+		}
+		if err := tx.First(&user, consumed.UserId).Error; err != nil {
+			return err
+		}
+		if user.Status != common.UserStatusDisabled || user.EmailVerified || NormalizeEmail(user.Email) != NormalizeEmail(payload.Email) {
+			return ErrAuthFlowInvalid
+		}
+		var existingDefaultTokenCount int64
+		if err := tx.Model(&Token{}).Where("user_id = ?", user.Id).Count(&existingDefaultTokenCount).Error; err != nil {
+			return err
+		}
+		if existingDefaultTokenCount > 0 {
+			return ErrAuthFlowInvalid
+		}
+		if constant.GenerateDefaultToken {
+			key, err := common.GenerateKey()
+			if err != nil {
+				return err
+			}
+			newToken := Token{
+				UserId: user.Id, Name: user.Username + " initial token", Key: key,
+				CreatedTime: common.GetTimestamp(), AccessedTime: common.GetTimestamp(),
+				ExpiredTime: -1, RemainQuota: 500000, UnlimitedQuota: true,
+			}
+			if setting.DefaultUseAutoGroup {
+				newToken.Group = "auto"
+			}
+			if err := tx.Create(&newToken).Error; err != nil {
+				return err
+			}
+		}
+		if err := tx.Model(&user).Updates(map[string]any{"email_verified": true, "status": common.UserStatusEnabled}).Error; err != nil {
+			return err
+		}
+		user.EmailVerified = true
+		user.Status = common.UserStatusEnabled
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := updateUserCache(user); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func ConfirmRegistrationEmail(token string) (*User, error) {
+	return ConfirmRegistrationEmailAndProvision(token)
+}
+
+func DeletePendingRegistration(userID int) error {
+	return DB.Transaction(func(tx *gorm.DB) error {
+		result := tx.Unscoped().Where("id = ? AND status = ? AND email_verified = ?", userID, common.UserStatusDisabled, false).Delete(&User{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return ErrAuthFlowInvalid
+		}
+		return tx.Where("user_id = ? AND purpose = ?", userID, AuthFlowPurposeEmailConfirmation).Delete(&AuthFlow{}).Error
+	})
+}
+
+func CreateDefaultTokenForUser(user User) error {
+	if !constant.GenerateDefaultToken {
+		return nil
+	}
+	key, err := common.GenerateKey()
+	if err != nil {
+		return err
+	}
+	token := Token{
+		UserId:             user.Id,
+		Name:               user.Username + " initial token",
+		Key:                key,
+		CreatedTime:        common.GetTimestamp(),
+		AccessedTime:       common.GetTimestamp(),
+		ExpiredTime:        -1,
+		RemainQuota:        500000,
+		UnlimitedQuota:     true,
+		ModelLimitsEnabled: false,
+	}
+	if setting.DefaultUseAutoGroup {
+		token.Group = "auto"
+	}
+	return token.Insert()
 }
 
 func IsAdmin(userId int) bool {

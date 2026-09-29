@@ -30,6 +30,8 @@ const (
 	AuthFlowPurposeTwoFASetup        = "2fa_setup"
 	AuthFlowPurposeSecurityProof     = "security_proof"
 	AuthFlowPurposeEmailBinding      = "email_binding"
+	AuthFlowPurposeEmailConfirmation = "email_confirmation"
+	AuthFlowPurposePasswordReset     = "password_reset"
 	AuthFlowTokenBytes               = 32
 	AuthFlowDefaultCleanupRetention  = 24 * time.Hour
 )
@@ -141,7 +143,11 @@ func authFlowTokenHash(token string) string {
 }
 
 func CreateAuthFlow(input AuthFlowCreate) (string, *AuthFlow, error) {
-	return createAuthFlowWithTx(DB, input)
+	return CreateAuthFlowWithTx(DB, input)
+}
+
+func CreateAuthFlowWithTx(tx *gorm.DB, input AuthFlowCreate) (string, *AuthFlow, error) {
+	return createAuthFlowWithTx(tx, input)
 }
 
 func createAuthFlowWithTx(tx *gorm.DB, input AuthFlowCreate) (string, *AuthFlow, error) {

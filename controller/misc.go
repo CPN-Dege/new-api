@@ -1,10 +1,13 @@
 package controller
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
@@ -216,32 +219,27 @@ func GetHomePageContent(c *gin.Context) {
 }
 
 func SendEmailVerification(c *gin.Context) {
-	email, err := service.ValidateAccountEmail(c.Query("email"))
-	if err != nil {
-		writeSecurityOperationError(c, err)
-		return
-	}
-
-	if model.IsEmailAlreadyTaken(email) {
-		common.ApiErrorI18n(c, i18n.MsgUserEmailAlreadyTaken)
-		return
-	}
-	code := common.GenerateVerificationCode(6)
-	common.RegisterVerificationCodeWithKey(email, code, common.EmailVerificationPurpose)
-	subject := fmt.Sprintf("%s邮箱验证邮件", common.SystemName)
-	content := fmt.Sprintf("<p>您好，你正在进行%s邮箱验证。</p>"+
-		"<p>您的验证码为: <strong>%s</strong></p>"+
-		"<p>验证码 %d 分钟内有效，如果不是本人操作，请忽略。</p>", common.SystemName, code, common.VerificationValidMinutes)
-	err = common.SendEmail(subject, email, content)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
+	c.JSON(http.StatusGone, gin.H{
+		"success": false,
+		"message": "Email-code registration is no longer supported. Submit the registration form to receive a verification link.",
 	})
-	return
+}
+
+func ConfirmRegistrationEmail(c *gin.Context) {
+	token := strings.TrimSpace(c.Query("token"))
+	if token == "" {
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		return
+	}
+	user, err := model.ConfirmRegistrationEmailAndProvision(token)
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgUserVerificationCodeError)
+		return
+	}
+	if err := service.NotifyAccountSecurityChange(user.Email, "Email verified; account activated"); err != nil {
+		logger.LogError(c.Request.Context(), "account activation email delivery failed")
+	}
+	c.Redirect(http.StatusSeeOther, strings.TrimRight(system_setting.ServerAddress, "/")+"/sign-in?verified=1")
 }
 
 func SendPasswordResetEmail(c *gin.Context) {
@@ -250,64 +248,54 @@ func SendPasswordResetEmail(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
-	if _, err := model.GetUniqueUserByEmail(email); err == nil {
-		code := common.GenerateVerificationCode(0)
-		common.RegisterVerificationCodeWithKey(email, code, common.PasswordResetPurpose)
-		link := fmt.Sprintf("%s/user/reset?email=%s&token=%s", system_setting.ServerAddress, email, code)
-		subject := fmt.Sprintf("%s密码重置", common.SystemName)
-		content := fmt.Sprintf("<p>您好，你正在进行%s密码重置。</p>"+
-			"<p>点击 <a href='%s'>此处</a> 进行密码重置。</p>"+
-			"<p>如果链接无法点击，请尝试点击下面的链接或将其复制到浏览器中打开：<br> %s </p>"+
-			"<p>重置链接 %d 分钟内有效，如果不是本人操作，请忽略。</p>", common.SystemName, link, link, common.VerificationValidMinutes)
-		err := common.SendEmail(subject, email, content)
-		if err != nil {
-			logger.LogError(c.Request.Context(), fmt.Sprintf("failed to send password reset email to %s: %s", email, err.Error()))
+	if user, err := model.GetUniqueUserByEmail(email); err == nil {
+		payload, marshalErr := common.Marshal(map[string]string{"email": email})
+		if marshalErr == nil {
+			token, _, flowErr := model.CreateAuthFlow(model.AuthFlowCreate{
+				Purpose: model.AuthFlowPurposePasswordReset, UserId: user.Id,
+				Payload: string(payload), ExpiresAt: time.Now().Add(time.Duration(common.VerificationValidMinutes) * time.Minute),
+			})
+			if flowErr == nil {
+				link := fmt.Sprintf("%s/reset?email=%s&token=%s", strings.TrimRight(system_setting.ServerAddress, "/"), url.QueryEscape(email), url.QueryEscape(token))
+				subject := fmt.Sprintf("%s — Reset your password", common.SystemName)
+				content := fmt.Sprintf("<p>We received a request to reset your %s password.</p><p><a href='%s'>Reset Password</a></p><p>This single-use link expires in %d minutes. If you did not request this change, ignore this email.</p>", common.SystemName, html.EscapeString(link), common.VerificationValidMinutes)
+				if sendErr := common.SendEmail(subject, email, content); sendErr != nil {
+					logger.LogError(c.Request.Context(), "password reset email delivery failed")
+				}
+			}
 		}
-	} else if err != nil && !errors.Is(err, model.ErrEmailNotFound) {
-		logger.LogWarn(c.Request.Context(), fmt.Sprintf("skip password reset email for %s: %s", email, err.Error()))
+	} else if !errors.Is(err, model.ErrEmailNotFound) && !errors.Is(err, model.ErrEmailAmbiguous) {
+		logger.LogWarn(c.Request.Context(), "password reset lookup failed")
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-	})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "If the account exists, a password reset link has been sent."})
 }
 
 type PasswordResetRequest struct {
-	Email string `json:"email"`
-	Token string `json:"token"`
+	Email           string `json:"email"`
+	Token           string `json:"token"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirm_password"`
 }
 
 func ResetPassword(c *gin.Context) {
 	var req PasswordResetRequest
-	err := json.NewDecoder(c.Request.Body).Decode(&req)
-	if err != nil {
+	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
 		common.ApiError(c, err)
 		return
 	}
 	req.Email = model.NormalizeEmail(req.Email)
-	if req.Email == "" || req.Token == "" {
+	if req.Email == "" || req.Token == "" || req.Password != req.ConfirmPassword {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
-	if !common.VerifyCodeWithKey(req.Email, req.Token, common.PasswordResetPurpose) {
+	if err := common.ValidateNewAccountPassword(req.Password); err != nil {
+		common.ApiErrorI18n(c, i18n.MsgUserInputInvalid, map[string]any{"Error": err.Error()})
+		return
+	}
+	if err := model.ResetPasswordWithToken(req.Email, req.Token, req.Password); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgUserPasswordResetLinkInvalid)
 		return
 	}
-	password := common.GenerateVerificationCode(12)
-	err = model.ResetUserPasswordByEmail(req.Email, password)
-	if err != nil {
-		if errors.Is(err, model.ErrEmailNotFound) || errors.Is(err, model.ErrEmailAmbiguous) {
-			common.ApiErrorI18n(c, i18n.MsgUserPasswordResetLinkInvalid)
-			return
-		}
-		common.ApiError(c, err)
-		return
-	}
-	common.DeleteKey(req.Email, common.PasswordResetPurpose)
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    password,
-	})
-	return
+	notificationFailed := service.NotifyAccountSecurityChange(req.Email, "Password reset completed") != nil
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password reset successfully. Please sign in with your new password.", "notification_warning": notificationFailed})
 }

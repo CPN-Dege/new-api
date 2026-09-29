@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -43,7 +44,6 @@ import { LegalConsent } from '@/features/auth/components/legal-consent'
 import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { registerFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
-import { useEmailVerification } from '@/features/auth/hooks/use-email-verification'
 import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
 import {
   getAffiliateCode,
@@ -61,12 +61,11 @@ export function SignUpForm({
 }: React.HTMLAttributes<HTMLFormElement>) {
   const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
-  const [verificationCode, setVerificationCode] = useState('')
   const [agreedToLegal, setAgreedToLegal] = useState(false)
   const [wechatCode, setWeChatCode] = useState('')
   const [isWeChatDialogOpen, setIsWeChatDialogOpen] = useState(false)
   const [isWeChatSubmitting, setIsWeChatSubmitting] = useState(false)
-  const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0)
+  const [turnstileWidgetKey] = useState(0)
   const legalConsentErrorMessage = t('Please agree to the legal terms first')
 
   const { status } = useStatus()
@@ -78,28 +77,17 @@ export function SignUpForm({
     validateTurnstile,
   } = useTurnstile()
   const { redirectToLogin, handleLoginResult } = useAuthRedirect()
-  const {
-    isSending: isSendingCode,
-    secondsLeft,
-    isActive,
-    sendCode,
-  } = useEmailVerification({
-    turnstileToken,
-    validateTurnstile,
-  })
-
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
       username: '',
       email: '',
+      mobile: '',
       password: '',
       confirmPassword: '',
     },
   })
 
-  const emailValue = form.watch('email')
-  const emailVerificationRequired = !!status?.email_verification
   const hasUserAgreement = Boolean(status?.user_agreement_enabled)
   const hasPrivacyPolicy = Boolean(status?.privacy_policy_enabled)
   const requiresLegalConsent = hasUserAgreement || hasPrivacyPolicy
@@ -145,16 +133,10 @@ export function SignUpForm({
       return
     }
 
-    // Validate email verification if required
-    if (emailVerificationRequired) {
-      if (!data.email) {
-        toast.error(t('Please enter your email'))
-        return
-      }
-      if (!verificationCode) {
-        toast.error(t('Please enter the verification code'))
-        return
-      }
+    // Email is mandatory for activation.
+    if (!data.email) {
+      toast.error(t('Please enter your email'))
+      return
     }
 
     if (!validateTurnstile()) return
@@ -164,14 +146,14 @@ export function SignUpForm({
       const res = await register({
         username: data.username,
         password: data.password,
-        email: data.email || undefined,
-        verification_code: verificationCode || undefined,
+        email: data.email,
+        mobile: data.mobile,
         aff_code: getAffiliateCode(),
         turnstile: turnstileToken,
       })
 
       if (res?.success) {
-        toast.success(t('Account created! Please sign in'))
+        toast.success(t('Account created. Check your email and click Verify Email before signing in.'))
         redirectToLogin()
       } else {
         handleServerError(createServerError(res, t('Failed to create account')))
@@ -182,13 +164,6 @@ export function SignUpForm({
       )
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  async function handleSendVerificationCode() {
-    if (await sendCode(emailValue || '')) {
-      setTurnstileToken('')
-      setTurnstileWidgetKey((current) => current + 1)
     }
   }
 
@@ -235,15 +210,6 @@ export function SignUpForm({
     }
   }
 
-  let verificationCodeAction: ReactNode = t('Send code')
-  if (isActive) {
-    verificationCodeAction = t('Resend ({{seconds}}s)', {
-      seconds: secondsLeft,
-    })
-  } else if (isSendingCode) {
-    verificationCodeAction = <Loader2 className='h-4 w-4 animate-spin' />
-  }
-
   return (
     <Form {...form}>
       <form
@@ -261,6 +227,42 @@ export function SignUpForm({
               <FormControl>
                 <Input placeholder={t('Enter your username')} {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Email Field */}
+        <FormField
+          control={form.control}
+          name='email'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('Email')}</FormLabel>
+              <FormControl>
+                <Input placeholder={t('name@example.com')} type='email' {...field} />
+              </FormControl>
+              <FormDescription>
+                {t('We will send a verification link after registration.')}
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Mobile Field */}
+        <FormField
+          control={form.control}
+          name='mobile'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('Mobile number')}</FormLabel>
+              <FormControl>
+                <Input placeholder='+628123456789' type='tel' autoComplete='tel' {...field} />
+              </FormControl>
+              <FormDescription>
+                {t('Use international E.164 format. This number must be unique.')}
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -298,57 +300,6 @@ export function SignUpForm({
             </FormItem>
           )}
         />
-
-        {/* Email Verification Section */}
-        {emailVerificationRequired && (
-          <>
-            {/* Email Field */}
-            <FormField
-              control={form.control}
-              name='email'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    {t('Email (required for verification)')}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('name@example.com')}
-                      type='email'
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Verification Code Field */}
-            <div className='flex items-end gap-2'>
-              <div className='flex-1'>
-                <Input
-                  placeholder={t('Verification code')}
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                />
-              </div>
-              <Button
-                variant='outline'
-                type='button'
-                disabled={
-                  isLoading ||
-                  isSendingCode ||
-                  isActive ||
-                  !emailValue ||
-                  !turnstileReady
-                }
-                onClick={handleSendVerificationCode}
-              >
-                {verificationCodeAction}
-              </Button>
-            </div>
-          </>
-        )}
 
         {/* Turnstile */}
         {isTurnstileEnabled && (
