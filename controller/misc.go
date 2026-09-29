@@ -251,7 +251,7 @@ func SendPasswordResetEmail(c *gin.Context) {
 	if user, err := model.GetUniqueUserByEmail(email); err == nil {
 		payload, marshalErr := common.Marshal(map[string]string{"email": email})
 		if marshalErr == nil {
-			token, _, flowErr := model.CreateAuthFlow(model.AuthFlowCreate{
+			token, _, flowErr := model.CreateExclusiveAuthFlow(model.AuthFlowCreate{
 				Purpose: model.AuthFlowPurposePasswordReset, UserId: user.Id,
 				Payload: string(payload), ExpiresAt: time.Now().Add(time.Duration(common.VerificationValidMinutes) * time.Minute),
 			})

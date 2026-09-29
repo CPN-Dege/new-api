@@ -146,6 +146,26 @@ func CreateAuthFlow(input AuthFlowCreate) (string, *AuthFlow, error) {
 	return CreateAuthFlowWithTx(DB, input)
 }
 
+func CreateExclusiveAuthFlow(input AuthFlowCreate) (string, *AuthFlow, error) {
+	if input.UserId <= 0 || strings.TrimSpace(input.Purpose) == "" {
+		return "", nil, ErrAuthFlowInvalid
+	}
+	var token string
+	var flow *AuthFlow
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		now := time.Now()
+		if err := tx.Model(&AuthFlow{}).
+			Where("user_id = ? AND purpose = ? AND consumed_at IS NULL", input.UserId, input.Purpose).
+			Update("consumed_at", now).Error; err != nil {
+			return err
+		}
+		var err error
+		token, flow, err = CreateAuthFlowWithTx(tx, input)
+		return err
+	})
+	return token, flow, err
+}
+
 func CreateAuthFlowWithTx(tx *gorm.DB, input AuthFlowCreate) (string, *AuthFlow, error) {
 	return createAuthFlowWithTx(tx, input)
 }

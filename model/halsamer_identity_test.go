@@ -116,9 +116,9 @@ func TestPasswordResetTokenSetsChosenPasswordOnce(t *testing.T) {
 	require.NoError(t, user.Insert(0))
 	token, _, err := CreateAuthFlow(AuthFlowCreate{Purpose: AuthFlowPurposePasswordReset, UserId: user.Id, Payload: `{"email":"reset@example.com"}`, ExpiresAt: time.Now().Add(time.Minute)})
 	require.NoError(t, err)
-	secondToken, _, err := CreateAuthFlow(AuthFlowCreate{Purpose: AuthFlowPurposePasswordReset, UserId: user.Id, Payload: `{"email":"reset@example.com"}`, ExpiresAt: time.Now().Add(time.Minute)})
+	secondToken, _, err := CreateExclusiveAuthFlow(AuthFlowCreate{Purpose: AuthFlowPurposePasswordReset, UserId: user.Id, Payload: `{"email":"reset@example.com"}`, ExpiresAt: time.Now().Add(time.Minute)})
 	require.NoError(t, err)
-	require.NoError(t, ResetPasswordWithToken(user.Email, token, "new-password-123"))
+	require.NoError(t, ResetPasswordWithToken(user.Email, secondToken, "new-password-123"))
 	var stored User
 	require.NoError(t, DB.First(&stored, user.Id).Error)
 	assert.True(t, common.ValidatePasswordAndHash("new-password-123", stored.Password))
