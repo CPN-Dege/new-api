@@ -22,6 +22,9 @@ import { useTranslation } from 'react-i18next'
 import { PublicLayout } from '@/components/layout'
 import { PageTransition } from '@/components/page-transition'
 
+import { HalsamerPricingHighlight } from './components/halsamer-pricing-highlight'
+import { HALSAMER_PUBLIC_MODEL } from './halsamer-public-pricing'
+
 import {
   LoadingSkeleton,
   EmptyState,
@@ -32,7 +35,7 @@ import {
   ModelCardGrid,
   ModelDetailsDrawer,
 } from './components'
-import { EXCLUDED_GROUPS, VIEW_MODES } from './constants'
+import { VIEW_MODES } from './constants'
 import { useFilters } from './hooks/use-filters'
 import { usePricingData } from './hooks/use-pricing-data'
 
@@ -53,6 +56,18 @@ export function Pricing() {
     priceRate,
     usdExchangeRate,
   } = usePricingData()
+
+  const publicModels = useMemo(
+    () =>
+      (models || [])
+        .filter((model) => model.model_name === HALSAMER_PUBLIC_MODEL)
+        .map((model) => ({
+          ...model,
+          enable_groups: ['default'],
+          group_ratio: { default: model.group_ratio?.default ?? groupRatio?.default ?? 1 },
+        })),
+    [groupRatio, models]
+  )
 
   const {
     searchInput,
@@ -81,7 +96,7 @@ export function Pricing() {
     availableTags,
     clearFilters,
     clearSearch,
-  } = useFilters(models || [])
+  } = useFilters(publicModels)
 
   const handleModelClick = useCallback((modelName: string) => {
     setSelectedModelName(modelName)
@@ -90,20 +105,22 @@ export function Pricing() {
   const selectedModel = useMemo(
     () =>
       selectedModelName
-        ? (models || []).find(
+        ? publicModels.find(
             (model) => model.model_name === selectedModelName
           ) || null
         : null,
-    [models, selectedModelName]
+    [publicModels, selectedModelName]
   )
 
-  const availableGroups = useMemo(
-    () =>
-      Object.keys(usableGroup || {}).filter(
-        (g) => !EXCLUDED_GROUPS.includes(g)
-      ),
+  const publicUsableGroup = useMemo(
+    () => ({ default: usableGroup?.default ?? 'Default' }),
     [usableGroup]
   )
+  const publicGroupRatio = useMemo(
+    () => ({ default: groupRatio?.default ?? 1 }),
+    [groupRatio]
+  )
+  const availableGroups = ['default']
 
   const handleClearAll = useCallback(() => {
     clearFilters()
@@ -182,15 +199,15 @@ export function Pricing() {
               {t('Model Square')}
             </h1>
             <p className='text-muted-foreground/80 mt-3 text-sm sm:mt-4 sm:text-base'>
-              {t('This site currently has {{count}} models enabled', {
-                count: models?.length || 0,
-              })}
+              GPT 6 Astra is live now on the default group
             </p>
             <p className='text-muted-foreground/60 mx-auto mt-2 max-w-2xl text-xs leading-relaxed sm:text-sm'>
-              {t(
-                'Discover curated AI models, compare pricing and capabilities, and choose the right model for every scenario.'
-              )}
+              Transparent USD pricing per 1M tokens. GPT 5.6 Sol and GPT 6 Sol
+              are coming soon.
             </p>
+            <div className='mx-auto mt-6 max-w-4xl text-left'>
+              <HalsamerPricingHighlight modelName={HALSAMER_PUBLIC_MODEL} />
+            </div>
             <SearchBar
               value={searchInput}
               onChange={setSearchInput}
@@ -216,9 +233,9 @@ export function Pricing() {
               onTagChange={setTagFilter}
               vendors={vendors || []}
               groups={availableGroups}
-              groupRatios={groupRatio}
+              groupRatios={publicGroupRatio}
               tags={availableTags}
-              models={models || []}
+              models={publicModels}
               hasActiveFilters={hasActiveFilters}
               onClearFilters={clearFilters}
               className='hover-scrollbar sticky top-20 hidden max-h-[calc(100dvh-6rem)] self-start overflow-y-auto xl:block'
@@ -227,7 +244,7 @@ export function Pricing() {
             <main className='min-w-0 space-y-4'>
               <PricingToolbar
                 filteredCount={filteredModels.length}
-                totalCount={models?.length}
+                totalCount={publicModels.length}
                 sortBy={sortBy}
                 onSortChange={setSortBy}
                 tokenUnit={tokenUnit}
@@ -248,9 +265,9 @@ export function Pricing() {
                 onTagChange={setTagFilter}
                 vendors={vendors || []}
                 groups={availableGroups}
-                groupRatios={groupRatio}
+                groupRatios={publicGroupRatio}
                 tags={availableTags}
-                models={models || []}
+                models={publicModels}
                 hasActiveFilters={hasActiveFilters}
                 activeFilterCount={activeFilterCount}
                 onClearFilters={clearFilters}
@@ -267,8 +284,8 @@ export function Pricing() {
                 if (!open) setSelectedModelName(null)
               }}
               model={selectedModel}
-              groupRatio={groupRatio || {}}
-              usableGroup={usableGroup || {}}
+              groupRatio={publicGroupRatio}
+              usableGroup={publicUsableGroup}
               endpointMap={
                 (endpointMap as Record<
                   string,

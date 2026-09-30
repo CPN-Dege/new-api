@@ -17,7 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Dialog } from '@/components/dialog'
@@ -27,16 +33,21 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PUBLIC_NAV_ITEMS } from '@/features/home/public-branding'
 import { SystemUpdateAction } from '@/features/system-update/system-update-action'
 import { useNotifications } from '@/hooks/use-notifications'
 import { useSystemConfig } from '@/hooks/use-system-config'
-import { useTopNavLinks } from '@/hooks/use-top-nav-links'
+import { resolveHeaderTitle } from '@/lib/browser-branding'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
-import { defaultTopNavLinks } from '../config/top-nav.config'
 import type { TopNavLink } from '../types'
 import { HeaderLogo } from './header-logo'
+
+const PUBLIC_LINKS: readonly TopNavLink[] = PUBLIC_NAV_ITEMS.map((item) => ({
+  ...item,
+  disabled: false,
+}))
 
 const AUTH_PROMPT_SECONDS = 5
 
@@ -64,7 +75,6 @@ export interface PublicHeaderProps {
 
 export function PublicHeader(props: PublicHeaderProps) {
   const {
-    navLinks = defaultTopNavLinks,
     showThemeSwitch = true,
     showLanguageSwitcher = true,
     logo: customLogo,
@@ -84,20 +94,25 @@ export function PublicHeader(props: PublicHeaderProps) {
     useState(AUTH_PROMPT_SECONDS)
   const { auth } = useAuthStore()
   const {
-    systemName,
     logo: systemLogo,
     loading,
     logoLoaded,
   } = useSystemConfig()
-  const dynamicLinks = useTopNavLinks()
+  const publicLinks = useMemo(
+    () =>
+      PUBLIC_LINKS.map((item) => ({
+        ...item,
+        title: t(item.title),
+      })),
+    [t]
+  )
+  const links: readonly TopNavLink[] = props.navLinks ?? publicLinks
   const notifications = useNotifications()
   const routerState = useRouterState()
   const pathname = routerState.location.pathname
-
   const user = auth.user
   const isAuthenticated = !!user
-  const displaySiteName = customSiteName || systemName
-  const links = dynamicLinks.length > 0 ? dynamicLinks : navLinks
+  const displaySiteName = customSiteName || resolveHeaderTitle(scrolled)
 
   let logoContent: ReactNode = (
     <HeaderLogo

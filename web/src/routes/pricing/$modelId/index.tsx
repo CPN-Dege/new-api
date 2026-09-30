@@ -19,9 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import z from 'zod'
 
-import { ModelDetails } from '@/features/pricing/components/model-details'
 import { getModuleAccessForGuard } from '@/lib/nav-modules'
-import { useAuthStore } from '@/stores/auth-store'
 
 const modelDetailsSearchSchema = z.object({
   search: z.string().optional(),
@@ -38,20 +36,14 @@ const modelDetailsSearchSchema = z.object({
 
 export const Route = createFileRoute('/pricing/$modelId/')({
   validateSearch: modelDetailsSearchSchema,
-  beforeLoad: async ({ context, location }) => {
+  beforeLoad: async ({ context, location, params }) => {
     const access = await getModuleAccessForGuard(context.queryClient, 'pricing')
-    if (!access.enabled) {
-      throw redirect({ to: '/' })
+    if (!access.enabled || params.modelId !== 'gpt-astra-6') {
+      throw redirect({ to: '/pricing' })
     }
-    if (access.requireAuth) {
-      const { auth } = useAuthStore.getState()
-      if (!auth.user) {
-        throw redirect({
-          to: '/sign-in',
-          search: { redirect: location.href },
-        })
-      }
-    }
+    throw redirect({
+      to: '/pricing',
+      search: { ...location.search, search: 'gpt-astra-6' },
+    })
   },
-  component: ModelDetails,
 })

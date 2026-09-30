@@ -29,6 +29,7 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import { AnimateInView } from '@/components/animate-in-view'
+import { CORE_FEATURES_COPY, FOCUSED_MODELS } from '../../public-branding'
 
 interface FeaturesProps {
   className?: string
@@ -184,14 +185,35 @@ export function Features(_props: FeaturesProps) {
       <div className='mx-auto max-w-6xl'>
         <AnimateInView className='mb-16 max-w-lg'>
           <p className='text-muted-foreground mb-3 text-xs font-medium tracking-widest uppercase'>
-            {t('Core Features')}
+            {t(CORE_FEATURES_COPY.eyebrow)}
           </p>
           <h2 className='text-2xl leading-tight font-bold tracking-tight md:text-3xl'>
-            {t('Built for developers,')}
+            {t(CORE_FEATURES_COPY.heading)}
             <br />
-            {t('designed for scale')}
+            {t(CORE_FEATURES_COPY.subheading)}
           </h2>
         </AnimateInView>
+
+        {/* Focused models */}
+        <div className='mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3'>
+          {FOCUSED_MODELS.map((model) => (
+            <div
+              key={model.name}
+              className='border-border/50 bg-muted/20 flex items-center justify-between rounded-xl border px-4 py-3'
+            >
+              <span className='text-sm font-semibold'>{model.name}</span>
+              <span
+                className={
+                  model.status === 'Live'
+                    ? 'rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold tracking-wide text-emerald-600 uppercase dark:text-emerald-400'
+                    : 'text-muted-foreground rounded-full bg-muted px-2 py-1 text-[10px] font-bold tracking-wide uppercase'
+                }
+              >
+                {model.status}
+              </span>
+            </div>
+          ))}
+        </div>
 
         {/* Bento grid */}
         <div className='border-border/40 bg-border/40 grid gap-px overflow-hidden rounded-xl border md:grid-cols-3'>

@@ -16,15 +16,20 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { CherryStudio } from '@lobehub/icons'
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, BookOpen } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { useStatus } from '@/hooks/use-status'
+import { getLobeIcon } from '@/lib/lobe-icon'
 
 import { HeroTerminalDemo } from '../hero-terminal-demo'
+import {
+  HERO_COPY,
+  SUPPORTED_APPLICATIONS,
+  SUPPORTED_APPLICATIONS_DESCRIPTION,
+} from '../../public-branding'
 
 interface HeroProps {
   className?: string
@@ -118,19 +123,23 @@ export function Hero(props: HeroProps) {
             className='landing-animate-fade-up text-[clamp(2.25rem,4.5vw,3.25rem)] leading-[1.15] font-bold tracking-tight'
             style={{ animationDelay: '60ms' }}
           >
-            {t('Unified API Gateway for')}
+            {t(HERO_COPY.heading)}
             <br />
             <span className='bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent'>
-              {t('Vast Range of AI Models')}
+              {HERO_COPY.modelLine}
             </span>
           </h1>
           <p
-            className='landing-animate-fade-up text-muted-foreground/80 mt-5 max-w-xl text-base leading-relaxed opacity-0 md:text-[15px]'
-            style={{ animationDelay: '120ms' }}
+            className='landing-animate-fade-up mt-3 text-sm font-medium text-blue-600 opacity-0 dark:text-blue-300'
+            style={{ animationDelay: '100ms' }}
           >
-            {t(
-              'Access a vast selection of models via a standard, unified API protocol. Power AI applications, manage digital assets, and connect the Future.'
-            )}
+            {t(HERO_COPY.comingSoonLine)}
+          </p>
+          <p
+            className='landing-animate-fade-up text-muted-foreground/80 mt-5 max-w-xl text-base leading-relaxed opacity-0 md:text-[15px]'
+            style={{ animationDelay: '140ms' }}
+          >
+            {t(HERO_COPY.description)}
           </p>
 
           <div
@@ -179,51 +188,25 @@ export function Hero(props: HeroProps) {
                 {t('Supported Applications')}
               </span>
               <p className='text-muted-foreground/60 text-xs leading-relaxed'>
-                {t(
-                  'Supports one-click configuration and perfectly adapts to NewAPI multi-protocol configuration.'
-                )}
+                {t(SUPPORTED_APPLICATIONS_DESCRIPTION)}
               </p>
             </div>
             <div className='flex flex-wrap items-center gap-3'>
-              {/* Cherry Studio */}
-              <a
-                href='https://cherry-ai.com'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='group border-border/40 bg-muted/15 text-foreground/80 hover:border-border hover:bg-muted/30 hover:text-foreground flex items-center gap-3 rounded-full border px-5 py-2.5 text-sm font-medium shadow-[0_1px_2.5px_rgba(0,0,0,0.01)] backdrop-blur-xs transition-all duration-300 hover:scale-[1.02]'
-              >
-                <CherryStudio.Color size={24} className='shrink-0' />
-                <span>Cherry Studio</span>
-              </a>
-
-              {/* CC Switch */}
-              <a
-                href='https://ccswitch.io'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='group border-border/40 bg-muted/15 text-foreground/80 hover:border-border hover:bg-muted/30 hover:text-foreground flex items-center gap-3 rounded-full border px-5 py-2.5 text-sm font-medium shadow-[0_1px_2.5px_rgba(0,0,0,0.01)] backdrop-blur-xs transition-all duration-300 hover:scale-[1.02]'
-              >
-                <img
-                  src='https://ccswitch.io/favicon.png'
-                  alt='CC Switch'
-                  className='size-6 shrink-0 rounded-md object-contain'
-                  onError={(e) => {
-                    // Fallback to a styled text avatar if the remote favicon fails to load in sandbox or local environments
-                    e.currentTarget.style.display = 'none'
-                    const fallback = e.currentTarget.nextSibling as HTMLElement
-                    if (fallback) fallback.style.display = 'flex'
-                  }}
-                />
-                <span
-                  style={{ display: 'none' }}
-                  className='size-6 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-[10px] font-bold text-blue-600 dark:bg-blue-400/10 dark:text-blue-400'
+              {SUPPORTED_APPLICATIONS.map((application) => (
+                <a
+                  key={application.name}
+                  href={application.href}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='group border-border/40 bg-muted/15 text-foreground/80 hover:border-border hover:bg-muted/30 hover:text-foreground flex items-center gap-3 rounded-full border px-5 py-2.5 text-sm font-medium shadow-[0_1px_2.5px_rgba(0,0,0,0.01)] backdrop-blur-xs transition-all duration-300 hover:scale-[1.02]'
                 >
-                  CC
-                </span>
-                <span>CC Switch</span>
-              </a>
+                  <span className='flex size-6 shrink-0 items-center justify-center'>
+                    {getLobeIcon(application.iconName, 24)}
+                  </span>
+                  <span>{application.name}</span>
+                </a>
+              ))}
 
-              {/* "更多" */}
               <div className='group border-border/40 bg-muted/15 text-foreground/55 hover:border-border hover:bg-muted/30 hover:text-foreground flex cursor-default items-center gap-2.5 rounded-full border px-5 py-2.5 text-sm font-medium shadow-[0_1px_2.5px_rgba(0,0,0,0.01)] backdrop-blur-xs transition-all duration-300 hover:scale-[1.02]'>
                 <MoreIcon />
                 <span>{t('More Apps')}</span>
