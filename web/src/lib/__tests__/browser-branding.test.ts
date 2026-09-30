@@ -1,8 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import {
   HALSAMER_BROWSER_TITLE,
   HALSAMER_COMPACT_TITLE,
+  HALSAMER_FAVICON,
+  HALSAMER_LOGO,
   resolveBrowserTitle,
   resolveHeaderTitle,
 } from '../browser-branding'
@@ -18,5 +23,16 @@ describe('Halsamer browser branding', () => {
     expect(resolveHeaderTitle(false)).toBe(HALSAMER_BROWSER_TITLE)
     expect(resolveHeaderTitle(true)).toBe(HALSAMER_COMPACT_TITLE)
     expect(HALSAMER_COMPACT_TITLE).toBe('HLS API')
+  })
+
+  it('uses the supplied Halsamer 3D mark and favicon assets', () => {
+    expect(HALSAMER_LOGO).toBe('/brand-3d/Halsamer-3D-symbol-color-512.png')
+    expect(HALSAMER_FAVICON).toBe('/brand-3d/favicon-3d.ico')
+  })
+
+  it('keeps build-time favicon injection on the supplied Halsamer asset', () => {
+    const config = readFileSync(resolve(process.cwd(), 'rsbuild.config.ts'), 'utf8')
+    expect(config).toContain("favicon: './public/brand-3d/favicon-3d.ico'")
+    expect(config).not.toContain("favicon: './public/favicon.ico'")
   })
 })

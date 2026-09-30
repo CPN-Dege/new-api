@@ -37,7 +37,7 @@ import { PUBLIC_NAV_ITEMS } from '@/features/home/public-branding'
 import { SystemUpdateAction } from '@/features/system-update/system-update-action'
 import { useNotifications } from '@/hooks/use-notifications'
 import { useSystemConfig } from '@/hooks/use-system-config'
-import { resolveHeaderTitle } from '@/lib/browser-branding'
+import { HALSAMER_LOGO, resolveHeaderTitle } from '@/lib/browser-branding'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -93,11 +93,7 @@ export function PublicHeader(props: PublicHeaderProps) {
   const [authPromptSecondsLeft, setAuthPromptSecondsLeft] =
     useState(AUTH_PROMPT_SECONDS)
   const { auth } = useAuthStore()
-  const {
-    logo: systemLogo,
-    loading,
-    logoLoaded,
-  } = useSystemConfig()
+  const { loading } = useSystemConfig()
   const publicLinks = useMemo(
     () =>
       PUBLIC_LINKS.map((item) => ({
@@ -116,14 +112,14 @@ export function PublicHeader(props: PublicHeaderProps) {
 
   let logoContent: ReactNode = (
     <HeaderLogo
-      src={systemLogo}
-      loading={loading}
-      logoLoaded={logoLoaded}
-      className='size-full rounded-lg object-contain'
+      src={HALSAMER_LOGO}
+      alt='Halsamer logo'
+      loading={false}
+      logoLoaded
+      className='size-full object-contain'
     />
   )
   if (customLogo) logoContent = customLogo
-  if (loading) logoContent = <Skeleton className='size-full rounded-lg' />
 
   let authContent = (
     <Button
