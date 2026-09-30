@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/tidwall/sjson"
+
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/logger"
@@ -21,6 +23,29 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func passthroughBodyWithModel(c *gin.Context, upstreamModel string) (common.ReplayableBody, func(), error) {
+	storage, err := common.GetBodyStorage(c)
+	if err != nil {
+		return nil, func() {}, err
+	}
+	if strings.TrimSpace(upstreamModel) == "" {
+		return common.NewReplayableBodyReader(storage), func() {}, nil
+	}
+	raw, err := storage.Bytes()
+	if err != nil {
+		return nil, func() {}, err
+	}
+	mapped, err := sjson.SetBytes(raw, "model", upstreamModel)
+	if err != nil {
+		return nil, func() {}, err
+	}
+	mappedStorage, err := common.CreateBodyStorage(mapped)
+	if err != nil {
+		return nil, func() {}, err
+	}
+	return common.NewReplayableBodyReader(mappedStorage), func() { _ = mappedStorage.Close() }, nil
+}
 
 func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
 	info.InitChannelMeta(c)
@@ -98,16 +123,20 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 	var requestBody io.Reader
 
 	if passThroughGlobal || info.ChannelSetting.PassThroughBodyEnabled {
-		storage, err := common.GetBodyStorage(c)
+		var cleanup func()
+		requestBody, cleanup, err = passthroughBodyWithModel(c, info.UpstreamModelName)
 		if err != nil {
 			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 		}
+		defer cleanup()
 		if common.DebugEnabled {
-			if debugBytes, bErr := storage.Bytes(); bErr == nil {
-				logger.LogDebug(c, "requestBody: %s", debugBytes)
+			storage, storageErr := common.GetBodyStorage(c)
+			if storageErr == nil {
+				if debugBytes, bErr := storage.Bytes(); bErr == nil {
+					logger.LogDebug(c, "requestBody: %s", debugBytes)
+				}
 			}
 		}
-		requestBody = common.NewReplayableBodyReader(storage)
 	} else {
 		convertedRequest, err := adaptor.ConvertOpenAIRequest(c, info, request)
 		if err != nil {
