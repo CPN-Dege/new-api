@@ -177,20 +177,19 @@ export function PromptInputProvider({
   const openRef = useRef<() => void>(() => {})
 
   const add = useCallback((files: File[] | FileList) => {
-    const incoming = Array.from(files)
+    const incoming = [...files]
     if (incoming.length === 0) return
 
-    setAttachements((prev) =>
-      prev.concat(
-        incoming.map((file) => ({
-          id: nanoid(),
-          type: 'file' as const,
-          url: URL.createObjectURL(file),
-          mediaType: file.type,
-          filename: file.name,
-        }))
-      )
-    )
+    setAttachements((prev) => [
+      ...prev,
+      ...incoming.map((file) => ({
+        id: nanoid(),
+        type: 'file' as const,
+        url: URL.createObjectURL(file),
+        mediaType: file.type,
+        filename: file.name,
+      })),
+    ])
   }, [])
 
   const remove = useCallback((id: string) => {
@@ -509,7 +508,7 @@ export const PromptInput = ({
 
   const addLocal = useCallback(
     (fileList: File[] | FileList) => {
-      const incoming = Array.from(fileList)
+      const incoming = [...fileList]
       const accepted = incoming.filter((f) => matchesAccept(f))
       if (incoming.length && accepted.length === 0) {
         onError?.({
@@ -552,7 +551,7 @@ export const PromptInput = ({
             filename: file.name,
           })
         }
-        return prev.concat(next)
+        return [...prev, ...next]
       })
     },
     [matchesAccept, maxFiles, maxFileSize, onError, t]
@@ -691,8 +690,11 @@ export const PromptInput = ({
     const blob = await response.blob()
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result as string)
-      reader.onerror = reject
+      const onLoadEnd = () => resolve(reader.result as string)
+      const onError = () =>
+        reject(reader.error ?? new Error('File read failed'))
+      reader.addEventListener('loadend', onLoadEnd)
+      reader.addEventListener('error', onError)
       reader.readAsDataURL(blob)
     })
   }
@@ -727,7 +729,7 @@ export const PromptInput = ({
     }
 
     // Convert blob URLs to data URLs asynchronously
-    Promise.all(
+    void Promise.all(
       files.map(async ({ id, ...item }) => {
         if (item.url && item.url.startsWith('blob:')) {
           return {
@@ -737,33 +739,38 @@ export const PromptInput = ({
         }
         return item
       })
-    ).then((convertedFiles: FileUIPart[]) => {
-      try {
-        const result = onSubmit({ text, files: convertedFiles }, event)
+    ).then(
+      (convertedFiles: FileUIPart[]) => {
+        try {
+          const result = onSubmit({ text, files: convertedFiles }, event)
 
-        // Handle both sync and async onSubmit
-        if (result instanceof Promise) {
-          result
-            .then(() => {
-              clear()
-              if (usingProvider) {
-                controller.textInput.clear()
-              }
-            })
-            .catch(() => {
-              // Don't clear on error - user may want to retry
-            })
-        } else {
-          // Sync function completed without throwing, clear attachments
-          clear()
-          if (usingProvider) {
-            controller.textInput.clear()
+          // Handle both sync and async onSubmit
+          if (result instanceof Promise) {
+            result
+              .then(() => {
+                clear()
+                if (usingProvider) {
+                  controller.textInput.clear()
+                }
+              })
+              .catch(() => {
+                // Don't clear on error - user may want to retry
+              })
+          } else {
+            // Sync function completed without throwing, clear attachments
+            clear()
+            if (usingProvider) {
+              controller.textInput.clear()
+            }
           }
+        } catch {
+          // Don't clear on error - user may want to retry
         }
-      } catch (_error) {
-        // Don't clear on error - user may want to retry
+      },
+      () => {
+        // Don't clear on conversion error - user may want to retry
       }
-    })
+    )
   }
 
   // Render with or without local provider
@@ -842,9 +849,7 @@ export const PromptInputTextarea = ({
     ) {
       e.preventDefault()
       const lastAttachment =
-        attachments.files.length > 0
-          ? attachments.files[attachments.files.length - 1]
-          : undefined
+        attachments.files.length > 0 ? attachments.files.at(-1) : undefined
       if (lastAttachment) {
         attachments.remove(lastAttachment.id)
       }
@@ -1115,6 +1120,8 @@ export const PromptInputSpeechButton = ({
   const recognitionRef = useRef<SpeechRecognition | null>(null)
 
   useEffect(() => {
+    let cleanup = () => {}
+
     if (
       typeof window !== 'undefined' &&
       ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
@@ -1138,7 +1145,10 @@ export const PromptInputSpeechButton = ({
       speechRecognition.onresult = (event) => {
         let finalTranscript = ''
 
-        const results = Array.from(event.results)
+        const results = Array.from(
+          { length: event.results.length },
+          (_, index) => event.results.item(index)
+        )
 
         for (const result of results) {
           if (result.isFinal) {
@@ -1158,22 +1168,28 @@ export const PromptInputSpeechButton = ({
         }
       }
 
-      speechRecognition.onerror = (event) => {
+      const handleError: EventListener = (event) => {
+        const errorEvent = event as SpeechRecognitionErrorEvent
         // eslint-disable-next-line no-console
-        console.error('Speech recognition error:', event.error)
+        console.error('Speech recognition error:', errorEvent.error)
         setIsListening(false)
       }
+      speechRecognition.addEventListener('error', handleError)
 
       recognitionRef.current = speechRecognition
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecognition(speechRecognition)
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop()
+      cleanup = () => {
+        speechRecognition.onstart = null
+        speechRecognition.onend = null
+        speechRecognition.onresult = null
+        speechRecognition.removeEventListener('error', handleError)
+        recognitionRef.current = null
+        speechRecognition.stop()
       }
     }
+
+    return cleanup
   }, [textareaRef, onTranscriptionChange])
 
   const toggleListening = useCallback(() => {

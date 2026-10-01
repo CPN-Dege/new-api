@@ -153,7 +153,11 @@ export function SignUpForm({
       })
 
       if (res?.success) {
-        toast.success(t('Account created. Check your email and click Verify Email before signing in.'))
+        toast.success(
+          t(
+            'Account created. Check your email and click Verify Email before signing in.'
+          )
+        )
         redirectToLogin()
       } else {
         handleServerError(createServerError(res, t('Failed to create account')))
@@ -240,7 +244,11 @@ export function SignUpForm({
             <FormItem>
               <FormLabel>{t('Email')}</FormLabel>
               <FormControl>
-                <Input placeholder={t('name@example.com')} type='email' {...field} />
+                <Input
+                  placeholder={t('name@example.com')}
+                  type='email'
+                  {...field}
+                />
               </FormControl>
               <FormDescription>
                 {t('We will send a verification link after registration.')}
@@ -258,10 +266,17 @@ export function SignUpForm({
             <FormItem>
               <FormLabel>{t('Mobile number')}</FormLabel>
               <FormControl>
-                <Input placeholder='+628123456789' type='tel' autoComplete='tel' {...field} />
+                <Input
+                  placeholder='+628123456789'
+                  type='tel'
+                  autoComplete='tel'
+                  {...field}
+                />
               </FormControl>
               <FormDescription>
-                {t('Use international E.164 format. This number must be unique.')}
+                {t(
+                  'Use international E.164 format. This number must be unique.'
+                )}
               </FormDescription>
               <FormMessage />
             </FormItem>

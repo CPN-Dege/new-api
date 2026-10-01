@@ -24,12 +24,12 @@ import { Button } from '@/components/ui/button'
 import { useStatus } from '@/hooks/use-status'
 import { getLobeIcon } from '@/lib/lobe-icon'
 
-import { HeroTerminalDemo } from '../hero-terminal-demo'
 import {
   HERO_COPY,
   SUPPORTED_APPLICATIONS,
   SUPPORTED_APPLICATIONS_DESCRIPTION,
 } from '../../public-branding'
+import { HeroTerminalDemo } from '../hero-terminal-demo'
 
 interface HeroProps {
   className?: string

@@ -87,6 +87,8 @@ describe('Halsamer password reset form', () => {
         'Your password has been reset. Sign in with your new password.'
       )
     ).toBeInTheDocument()
-    expect(screen.queryByDisplayValue('new-password-123')).not.toBeInTheDocument()
+    expect(
+      screen.queryByDisplayValue('new-password-123')
+    ).not.toBeInTheDocument()
   })
 })

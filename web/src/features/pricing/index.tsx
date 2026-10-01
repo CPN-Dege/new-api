@@ -22,9 +22,6 @@ import { useTranslation } from 'react-i18next'
 import { PublicLayout } from '@/components/layout'
 import { PageTransition } from '@/components/page-transition'
 
-import { HalsamerPricingHighlight } from './components/halsamer-pricing-highlight'
-import { HALSAMER_PUBLIC_MODEL } from './halsamer-public-pricing'
-
 import {
   LoadingSkeleton,
   EmptyState,
@@ -35,7 +32,9 @@ import {
   ModelCardGrid,
   ModelDetailsDrawer,
 } from './components'
+import { HalsamerPricingHighlight } from './components/halsamer-pricing-highlight'
 import { VIEW_MODES } from './constants'
+import { HALSAMER_PUBLIC_MODEL } from './halsamer-public-pricing'
 import { useFilters } from './hooks/use-filters'
 import { usePricingData } from './hooks/use-pricing-data'
 
@@ -64,7 +63,9 @@ export function Pricing() {
         .map((model) => ({
           ...model,
           enable_groups: ['default'],
-          group_ratio: { default: model.group_ratio?.default ?? groupRatio?.default ?? 1 },
+          group_ratio: {
+            default: model.group_ratio?.default ?? groupRatio?.default ?? 1,
+          },
         })),
     [groupRatio, models]
   )

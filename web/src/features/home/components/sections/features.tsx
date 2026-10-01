@@ -29,6 +29,7 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import { AnimateInView } from '@/components/animate-in-view'
+
 import { CORE_FEATURES_COPY, FOCUSED_MODELS } from '../../public-branding'
 
 interface FeaturesProps {
@@ -206,7 +207,7 @@ export function Features(_props: FeaturesProps) {
                 className={
                   model.status === 'Live'
                     ? 'rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold tracking-wide text-emerald-600 uppercase dark:text-emerald-400'
-                    : 'text-muted-foreground rounded-full bg-muted px-2 py-1 text-[10px] font-bold tracking-wide uppercase'
+                    : 'text-muted-foreground bg-muted rounded-full px-2 py-1 text-[10px] font-bold tracking-wide uppercase'
                 }
               >
                 {model.status}

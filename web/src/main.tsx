@@ -21,11 +21,8 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 
+import { HALSAMER_FAVICON, resolveBrowserTitle } from '@/lib/browser-branding'
 import { installBuildMetadata } from '@/lib/build-metadata'
-import {
-  HALSAMER_FAVICON,
-  resolveBrowserTitle,
-} from '@/lib/browser-branding'
 import { applyFaviconToDom } from '@/lib/dom-utils'
 import '@/lib/dayjs'
 import { initializeFrontendCache } from '@/lib/frontend-cache'

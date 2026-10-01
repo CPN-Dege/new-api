@@ -123,7 +123,9 @@ export function ResetPasswordConfirm(props: ResetPasswordConfirmProps) {
           </h2>
           <p className='text-muted-foreground text-left text-sm sm:text-base'>
             {completed
-              ? t('Your password has been reset. Sign in with your new password.')
+              ? t(
+                  'Your password has been reset. Sign in with your new password.'
+                )
               : t('Choose a new password for your account.')}
           </p>
         </div>
