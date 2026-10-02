@@ -52,33 +52,34 @@ export const SUPPORTED_APPLICATIONS_DESCRIPTION =
   'Supports one-click configuration and perfectly adapts to Halsamer API protocol configuration.'
 
 export type FocusedModel = {
-  name: 'GPT 5.6 Sol' | 'GPT 6 Sol' | 'GPT 6 Astra'
-  status: 'Live' | 'Coming soon'
-  modelId?: 'gpt-astra-6'
+  name: 'GPT 5.6 Sol' | 'GPT 6.1 Sol' | 'GPT 6 Luna' | 'GPT 6 Astra'
+  status: 'Live'
+  modelId: 'gpt-5.6-sol' | 'gpt-6.1-sol' | 'gpt-6-luna' | 'gpt-astra-6'
 }
 
 export const FOCUSED_MODELS: readonly FocusedModel[] = [
+  { name: 'GPT 5.6 Sol', status: 'Live', modelId: 'gpt-5.6-sol' },
+  { name: 'GPT 6.1 Sol', status: 'Live', modelId: 'gpt-6.1-sol' },
+  { name: 'GPT 6 Luna', status: 'Live', modelId: 'gpt-6-luna' },
   { name: 'GPT 6 Astra', status: 'Live', modelId: 'gpt-astra-6' },
-  { name: 'GPT 5.6 Sol', status: 'Coming soon' },
-  { name: 'GPT 6 Sol', status: 'Coming soon' },
 ] as const
 
 export const FOCUSED_STATS = [
-  { value: 1, label: 'live AI model' },
-  { value: 2, label: 'models coming soon' },
+  { value: FOCUSED_MODELS.length, label: 'live AI models' },
   { value: 1, label: 'unified API access' },
+  { value: 1, label: 'usage dashboard' },
 ] as const
 
 export const HERO_COPY = {
   heading: 'One API for',
-  modelLine: 'GPT 6 Astra',
-  comingSoonLine: 'GPT 5.6 Sol and GPT 6 Sol coming soon',
+  modelLine: 'GPT Sol, Luna & Astra',
+  availabilityLine: 'Four models. All live.',
   description:
-    'Use GPT 6 Astra today through Halsamer API with transparent pricing, clear usage tracking, and familiar OpenAI-compatible workflows.',
+    'Access four live models through Halsamer API with transparent pricing, clear usage tracking, and familiar OpenAI-compatible workflows.',
 } as const
 
 export const CORE_FEATURES_COPY = {
   eyebrow: 'Focused AI Access',
-  heading: 'One live model today,',
-  subheading: 'two more coming soon',
+  heading: 'Four live models,',
+  subheading: 'one API for your workflows',
 } as const

@@ -133,7 +133,7 @@ export function Hero(props: HeroProps) {
             className='landing-animate-fade-up mt-3 text-sm font-medium text-blue-600 opacity-0 dark:text-blue-300'
             style={{ animationDelay: '100ms' }}
           >
-            {t(HERO_COPY.comingSoonLine)}
+            {t(HERO_COPY.availabilityLine)}
           </p>
           <p
             className='landing-animate-fade-up text-muted-foreground/80 mt-5 max-w-xl text-base leading-relaxed opacity-0 md:text-[15px]'

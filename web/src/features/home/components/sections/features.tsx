@@ -196,21 +196,21 @@ export function Features(_props: FeaturesProps) {
         </AnimateInView>
 
         {/* Focused models */}
-        <div className='mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3'>
+        <div className='mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'>
           {FOCUSED_MODELS.map((model) => (
             <div
-              key={model.name}
-              className='border-border/50 bg-muted/20 flex items-center justify-between rounded-xl border px-4 py-3'
+              key={model.modelId}
+              data-model-id={model.modelId}
+              className='border-border/50 bg-muted/20 flex items-center justify-between gap-2 rounded-xl border px-4 py-3'
             >
-              <span className='text-sm font-semibold'>{model.name}</span>
-              <span
-                className={
-                  model.status === 'Live'
-                    ? 'rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold tracking-wide text-emerald-600 uppercase dark:text-emerald-400'
-                    : 'text-muted-foreground bg-muted rounded-full px-2 py-1 text-[10px] font-bold tracking-wide uppercase'
-                }
-              >
-                {model.status}
+              <div className='min-w-0'>
+                <span className='text-sm font-semibold'>{model.name}</span>
+                <code className='text-muted-foreground mt-1 block text-xs'>
+                  {model.modelId}
+                </code>
+              </div>
+              <span className='shrink-0 rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold tracking-wide text-emerald-600 uppercase dark:text-emerald-400'>
+                {t(model.status)}
               </span>
             </div>
           ))}
