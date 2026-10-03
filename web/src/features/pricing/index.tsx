@@ -34,7 +34,7 @@ import {
 } from './components'
 import { HalsamerPricingHighlight } from './components/halsamer-pricing-highlight'
 import { VIEW_MODES } from './constants'
-import { HALSAMER_PUBLIC_MODEL } from './halsamer-public-pricing'
+import { selectHalsamerPublicModels } from './halsamer-public-pricing'
 import { useFilters } from './hooks/use-filters'
 import { usePricingData } from './hooks/use-pricing-data'
 
@@ -58,15 +58,13 @@ export function Pricing() {
 
   const publicModels = useMemo(
     () =>
-      (models || [])
-        .filter((model) => model.model_name === HALSAMER_PUBLIC_MODEL)
-        .map((model) => ({
-          ...model,
-          enable_groups: ['default'],
-          group_ratio: {
-            default: model.group_ratio?.default ?? groupRatio?.default ?? 1,
-          },
-        })),
+      selectHalsamerPublicModels(models || []).map((model) => ({
+        ...model,
+        enable_groups: ['default'],
+        group_ratio: {
+          default: model.group_ratio?.default ?? groupRatio?.default ?? 1,
+        },
+      })),
     [groupRatio, models]
   )
 
@@ -200,14 +198,21 @@ export function Pricing() {
               {t('Model Square')}
             </h1>
             <p className='text-muted-foreground/80 mt-3 text-sm sm:mt-4 sm:text-base'>
-              GPT 6 Astra is live now on the default group
+              {t('Four live models on the default group')}
             </p>
             <p className='text-muted-foreground/60 mx-auto mt-2 max-w-2xl text-xs leading-relaxed sm:text-sm'>
-              Transparent USD pricing per 1M tokens. GPT 5.6 Sol and GPT 6 Sol
-              are coming soon.
+              {t(
+                'Transparent USD pricing per 1M tokens. Select a model to view its pricing and API details.'
+              )}
             </p>
-            <div className='mx-auto mt-6 max-w-4xl text-left'>
-              <HalsamerPricingHighlight modelName={HALSAMER_PUBLIC_MODEL} />
+            <div className='mx-auto mt-6 grid min-w-0 gap-4 text-left'>
+              {publicModels.map((model) => (
+                <HalsamerPricingHighlight
+                  key={model.model_name}
+                  modelName={model.model_name}
+                  billingExpr={model.billing_expr}
+                />
+              ))}
             </div>
             <SearchBar
               value={searchInput}

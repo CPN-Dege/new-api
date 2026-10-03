@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import z from 'zod'
 
+import { isHalsamerPublicModel } from '@/features/pricing/halsamer-public-pricing'
 import { getModuleAccessForGuard } from '@/lib/nav-modules'
 
 const modelDetailsSearchSchema = z.object({
@@ -38,12 +39,12 @@ export const Route = createFileRoute('/pricing/$modelId/')({
   validateSearch: modelDetailsSearchSchema,
   beforeLoad: async ({ context, location, params }) => {
     const access = await getModuleAccessForGuard(context.queryClient, 'pricing')
-    if (!access.enabled || params.modelId !== 'gpt-astra-6') {
+    if (!access.enabled || !isHalsamerPublicModel(params.modelId)) {
       throw redirect({ to: '/pricing' })
     }
     throw redirect({
       to: '/pricing',
-      search: { ...location.search, search: 'gpt-astra-6' },
+      search: { ...location.search, search: params.modelId },
     })
   },
 })

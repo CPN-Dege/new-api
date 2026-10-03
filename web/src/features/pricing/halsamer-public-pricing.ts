@@ -16,36 +16,24 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-export const HALSAMER_PUBLIC_MODEL = 'gpt-astra-6' as const
+import { FOCUSED_MODELS } from '../home/public-branding'
 
-export type HalsamerPublicPricingTier = {
-  id: '0_272k' | '272k_plus'
-  label: string
-  input: number
-  output: number
-  cacheRead: number
-  cacheWrite: number
-}
-
-export const HALSAMER_PUBLIC_PRICING: readonly HalsamerPublicPricingTier[] = [
-  {
-    id: '0_272k',
-    label: '0–272K input tokens',
-    input: 18,
-    output: 90,
-    cacheRead: 1.8,
-    cacheWrite: 22.5,
-  },
-  {
-    id: '272k_plus',
-    label: 'Over 272K input tokens',
-    input: 36,
-    output: 135,
-    cacheRead: 3.6,
-    cacheWrite: 45,
-  },
-] as const
+export const HALSAMER_PUBLIC_MODELS = FOCUSED_MODELS.map(
+  (model) => model.modelId
+)
 
 export function isHalsamerPublicModel(modelName: string): boolean {
-  return modelName === HALSAMER_PUBLIC_MODEL
+  return HALSAMER_PUBLIC_MODELS.some((id) => id === modelName)
+}
+
+export function selectHalsamerPublicModels<
+  T extends { model_name: string; enable_groups: string[] },
+>(models: T[]): T[] {
+  return models
+    .filter(
+      (model) =>
+        isHalsamerPublicModel(model.model_name) &&
+        model.enable_groups.includes('default')
+    )
+    .map((model) => ({ ...model, enable_groups: ['default'] }))
 }
