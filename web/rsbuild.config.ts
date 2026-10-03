@@ -64,7 +64,7 @@ export default defineConfig(({ envMode }) => {
     },
     html: {
       template: './index.html',
-      favicon: './public/brand-3d/favicon-3d.ico',
+      favicon: './public/brand-3d/favicon-transparent-v2.ico',
     },
     server: {
       host: '0.0.0.0',

@@ -42,7 +42,6 @@ export function useTopNavLinks(): TopNavLink[] {
       status as Record<string, unknown> | null
     )
   }, [status])
-  const docsLink: string | undefined = status?.docs_link as string | undefined
   const isAuthed = !!auth?.user
   const links: TopNavLink[] = []
 
@@ -67,17 +66,6 @@ export function useTopNavLinks(): TopNavLink[] {
       href: '/rankings',
       requiresAuth: rankings.requireAuth && !isAuthed,
     })
-  }
-
-  if (modules?.docs !== false) {
-    links.push(
-      docsLink
-        ? { title: t('Docs'), href: docsLink, external: true }
-        : { title: t('Docs'), href: '/docs' }
-    )
-  }
-  if (modules?.about !== false) {
-    links.push({ title: t('About'), href: '/about' })
   }
 
   return links

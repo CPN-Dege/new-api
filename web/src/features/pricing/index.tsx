@@ -32,7 +32,6 @@ import {
   ModelCardGrid,
   ModelDetailsDrawer,
 } from './components'
-import { HalsamerPricingHighlight } from './components/halsamer-pricing-highlight'
 import { VIEW_MODES } from './constants'
 import { selectHalsamerPublicModels } from './halsamer-public-pricing'
 import { useFilters } from './hooks/use-filters'
@@ -202,18 +201,9 @@ export function Pricing() {
             </p>
             <p className='text-muted-foreground/60 mx-auto mt-2 max-w-2xl text-xs leading-relaxed sm:text-sm'>
               {t(
-                'Transparent USD pricing per 1M tokens. Select a model to view its pricing and API details.'
+                'Compare all Halsamer models in one table. Prices are in USD per 1M tokens.'
               )}
             </p>
-            <div className='mx-auto mt-6 grid min-w-0 gap-4 text-left'>
-              {publicModels.map((model) => (
-                <HalsamerPricingHighlight
-                  key={model.model_name}
-                  modelName={model.model_name}
-                  billingExpr={model.billing_expr}
-                />
-              ))}
-            </div>
             <SearchBar
               value={searchInput}
               onChange={setSearchInput}

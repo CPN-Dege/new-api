@@ -45,7 +45,7 @@ describe('Halsamer browser branding', () => {
 
   it('uses the supplied Halsamer 3D mark and favicon assets', () => {
     expect(HALSAMER_LOGO).toBe('/brand-3d/Halsamer-3D-symbol-color-512.png')
-    expect(HALSAMER_FAVICON).toBe('/brand-3d/favicon-3d.ico')
+    expect(HALSAMER_FAVICON).toBe('/brand-3d/favicon-transparent-v2.ico')
   })
 
   it('keeps build-time favicon injection on the supplied Halsamer asset', () => {
@@ -53,7 +53,9 @@ describe('Halsamer browser branding', () => {
       resolve(process.cwd(), 'rsbuild.config.ts'),
       'utf8'
     )
-    expect(config).toContain("favicon: './public/brand-3d/favicon-3d.ico'")
+    expect(config).toContain(
+      "favicon: './public/brand-3d/favicon-transparent-v2.ico'"
+    )
     expect(config).not.toContain("favicon: './public/favicon.ico'")
   })
 })

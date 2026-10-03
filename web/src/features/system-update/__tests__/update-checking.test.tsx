@@ -146,31 +146,35 @@ describe('administrator update entry', () => {
     }
   )
 
-  test('shares results with maintenance, opens release details by keyboard and returns focus on Escape', async () => {
+  test('keeps maintenance free of update actions while the isolated action retains keyboard behavior', async () => {
     const user = userEvent.setup()
     render(
       <>
         <SystemUpdateAction presentation='version' />
-        <UpdateCheckerSection
-          currentVersion='v1.0.0-rc.35'
-          startTime={1_700_000_000}
-        />
+        <section aria-label='Maintenance fixture'>
+          <UpdateCheckerSection
+            currentVersion='v1.0.0-rc.35'
+            startTime={1_700_000_000}
+          />
+        </section>
       </>,
       { wrapper: Wrapper }
     )
     const buttons = await screen.findAllByRole('button', {
       name: /New version available: v1\.0\.0-rc\.36/,
     })
-    expect(buttons).toHaveLength(2)
+    expect(buttons).toHaveLength(1)
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(within(buttons[0]).getByText('v1.0.0-rc.35')).toHaveClass('truncate')
     expect(within(buttons[0]).getByText('Update available')).toHaveClass(
       'hidden',
       '@min-[22rem]/system-brand:inline-flex'
     )
-    expect(within(buttons[1]).getByText('Update available')).not.toHaveClass(
-      'hidden'
-    )
+    expect(
+      within(
+        screen.getByRole('region', { name: 'Maintenance fixture' })
+      ).queryByRole('button')
+    ).toBeNull()
 
     buttons[0].focus()
     await user.keyboard('{Enter}')
