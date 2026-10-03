@@ -36,6 +36,16 @@ const (
 	ConversionLossPolicyAllow ConversionLossPolicy = "allow"
 )
 
+// RequestValidationError reports invalid client input found during conversion.
+// Hosts decide how to surface it without coupling converters to HTTP.
+type RequestValidationError struct {
+	Message string
+}
+
+func (e *RequestValidationError) Error() string {
+	return e.Message
+}
+
 type ConversionLossError struct {
 	Diagnostics []ConversionDiagnostic
 }

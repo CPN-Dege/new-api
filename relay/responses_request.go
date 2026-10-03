@@ -17,9 +17,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type passthroughBodyCleanup func()
+
+func (cleanup passthroughBodyCleanup) Close() error {
+	cleanup()
+	return nil
+}
+
 // PrepareResponsesRequest applies the same model, conversion and channel rules
 // for HTTP and WebSocket requests. The caller closes closer after the attempt;
-// passthrough bodies remain owned by the incoming request's BodyStorage.
+// The original BodyStorage remains owned by the incoming request; the closer
+// releases any mapped passthrough copy.
 // The returned adaptor retains route/conversion state for DoRequest/DoResponse.
 func PrepareResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, req *dto.OpenAIResponsesRequest) (relaychannel.Adaptor, common.ReplayableBody, io.Closer, *types.NewAPIError) {
 	info.InitChannelMeta(c)
@@ -50,12 +58,11 @@ func PrepareResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, req *d
 	}
 	adaptor.Init(info)
 	if model_setting.GetGlobalSettings().PassThroughRequestEnabled || info.ChannelSetting.PassThroughBodyEnabled {
-		storage, err := common.GetBodyStorage(c)
+		body, cleanup, err := passthroughBodyWithModel(c, info.UpstreamModelName)
 		if err != nil {
 			return nil, nil, nil, types.NewError(err, types.ErrorCodeReadRequestBodyFailed, types.ErrOptionWithSkipRetry())
 		}
-		body := common.NewReplayableBodyReader(storage)
-		return adaptor, body, io.NopCloser(body), nil
+		return adaptor, body, passthroughBodyCleanup(cleanup), nil
 	}
 
 	convertedRequest, err := adaptor.ConvertOpenAIResponsesRequest(c, info, *request)
