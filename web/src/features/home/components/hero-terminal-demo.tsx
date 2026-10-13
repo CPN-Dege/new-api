@@ -94,7 +94,7 @@ export function HeroTerminalDemo(props: { className?: string }) {
       <Tabs defaultValue='chat' className='gap-0'>
         <TabsList
           variant='line'
-          className='h-auto w-full flex-wrap justify-start border-b px-3 py-2'
+          className='h-auto w-full flex-nowrap justify-start overflow-x-auto border-b px-3 py-2'
           aria-label={t('API protocol')}
         >
           {API_EXAMPLES.map((example) => (

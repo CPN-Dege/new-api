@@ -25,6 +25,10 @@ import { HeroTerminalDemo } from '../components/hero-terminal-demo'
 it('shows Halsamer endpoints and usable authentication examples for every protocol', async () => {
   const user = userEvent.setup()
   const { container } = render(<HeroTerminalDemo />)
+  expect(screen.getByRole('tablist')).toHaveClass(
+    'overflow-x-auto',
+    'flex-nowrap'
+  )
   for (const [label, path] of [
     ['Chat', '/v1/chat/completions'],
     ['Responses', '/v1/responses'],
