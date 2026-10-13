@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getImageModel } from '@/features/home/image-models'
 import { getPerfMetrics } from '@/features/performance-metrics/api'
 import {
   formatLatency,
@@ -599,13 +600,16 @@ function ModelHeader(props: { model: PricingModel }) {
   const model = props.model
   const modelIconKey = model.icon || model.vendor_icon
   const modelIcon = modelIconKey ? getLobeIcon(modelIconKey, 20) : null
-  const description = model.description || model.vendor_description || null
+  const imageModel = getImageModel(model.model_name)
+  const description = imageModel
+    ? t(imageModel.description)
+    : model.description || model.vendor_description || null
 
   return (
     <header className='pb-4'>
       <div className='flex items-center gap-2.5'>
         {modelIcon}
-        <h1 className='font-mono text-xl font-bold tracking-tight sm:text-2xl'>
+        <h1 className='min-w-0 font-mono text-xl font-bold tracking-tight break-all sm:text-2xl'>
           {model.model_name}
         </h1>
         <CopyButton

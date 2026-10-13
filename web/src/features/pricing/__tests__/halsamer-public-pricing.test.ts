@@ -33,12 +33,17 @@ vi.mock('@/lib/nav-modules', () => ({
   getModuleAccessForGuard: vi.fn(async () => ({ enabled: true })),
 }))
 
-it('keeps all four eligible API rows and their prices, hiding other models and parked groups', () => {
+it('keeps all nine eligible API rows and their prices, hiding other models and parked groups', () => {
   const models = [
     'gpt-5.6-sol',
     'gpt-6.1-sol',
     'gpt-6-luna',
     'gpt-astra-6',
+    'nano-banana-2',
+    'nano-banana-pro',
+    'gpt-image-2.5-sunburst',
+    'gpt-image-2.5-flare',
+    'gpt-image-2',
     'SaaSolVip',
   ].map((model_name) => ({
     model_name,
@@ -94,12 +99,58 @@ vi.mock('react-i18next', () => ({
 }))
 
 describe('Halsamer public pricing', () => {
-  it('admits exactly the four public IDs, not upstream aliases', () => {
+  it('advertises only the qualified image endpoint for image models without changing source metadata', () => {
+    const image = {
+      model_name: 'nano-banana-2',
+      enable_groups: ['default'],
+      supported_endpoint_types: ['openai', 'image-generation'],
+      billing_expr: 'unchanged',
+    }
+    const chat = {
+      model_name: 'gpt-6.1-sol',
+      enable_groups: ['default'],
+      supported_endpoint_types: ['openai'],
+      billing_expr: 'chat',
+    }
+    const result = selectHalsamerPublicModels([image, chat])
+    expect(result[0].supported_endpoint_types).toEqual(['image-generation'])
+    expect(image.supported_endpoint_types).toEqual([
+      'openai',
+      'image-generation',
+    ])
+    expect(result[0].billing_expr).toBe('unchanged')
+    expect(result[1]).toEqual(chat)
+  })
+  it('keeps every default-group image row and its native price unchanged', () => {
+    const models = [
+      'nano-banana-2',
+      'nano-banana-pro',
+      'gpt-image-2.5-sunburst',
+      'gpt-image-2.5-flare',
+      'gpt-image-2',
+    ].map((model_name) => ({
+      model_name,
+      enable_groups: ['default'],
+      billing_expr: `SENTINEL-${model_name}`,
+    }))
+    expect(selectHalsamerPublicModels(models)).toEqual(models)
+    expect(
+      selectHalsamerPublicModels(
+        models.map((model) => ({ ...model, enable_groups: ['private'] }))
+      )
+    ).toEqual([])
+  })
+  it('admits exactly the nine public IDs, not upstream aliases', () => {
     expect(HALSAMER_PUBLIC_MODELS).toEqual([
       'gpt-5.6-sol',
       'gpt-6.1-sol',
       'gpt-6-luna',
       'gpt-astra-6',
+      'nano-banana-2',
+      'nano-banana-pro',
+      'gpt-image-2.5-sunburst',
+      'gpt-image-2.5-flare',
+      'gpt-image-2',
     ])
     for (const id of HALSAMER_PUBLIC_MODELS) {
       expect(isHalsamerPublicModel(id)).toBe(true)

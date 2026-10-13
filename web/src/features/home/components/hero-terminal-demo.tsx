@@ -22,6 +22,8 @@ import { CopyButton } from '@/components/copy-button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
+import { imageRequest } from '../image-models'
+
 const ORIGIN = 'https://api.halsamer.io'
 const MODEL = 'gpt-6.1-sol'
 
@@ -45,6 +47,14 @@ const API_EXAMPLES = [
     endpoint: `${ORIGIN}/v1/responses`,
     headers: ['Authorization: Bearer $HALSAMER_API_KEY'],
     payload: { model: MODEL, input: 'Hello', max_output_tokens: 256 },
+  },
+  {
+    id: 'images',
+    label: 'Images',
+    baseUrl: `${ORIGIN}/v1`,
+    endpoint: `${ORIGIN}/v1/images/generations`,
+    headers: ['Authorization: Bearer $HALSAMER_API_KEY'],
+    payload: imageRequest('nano-banana-2'),
   },
   {
     id: 'claude',
@@ -84,12 +94,12 @@ export function HeroTerminalDemo(props: { className?: string }) {
       <Tabs defaultValue='chat' className='gap-0'>
         <TabsList
           variant='line'
-          className='h-auto w-full justify-start border-b px-3 py-2'
+          className='h-auto w-full flex-wrap justify-start border-b px-3 py-2'
           aria-label={t('API protocol')}
         >
           {API_EXAMPLES.map((example) => (
             <TabsTrigger key={example.id} value={example.id}>
-              {example.label}
+              {t(example.label)}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -113,7 +123,9 @@ export function HeroTerminalDemo(props: { className?: string }) {
                 </div>
                 <div>
                   <dt className='text-muted-foreground'>{t('Model')}</dt>
-                  <dd className='font-mono'>{MODEL}</dd>
+                  <dd className='font-mono'>
+                    {example.id === 'images' ? 'nano-banana-2' : MODEL}
+                  </dd>
                 </div>
               </dl>
               <p className='text-muted-foreground mb-3 text-xs'>

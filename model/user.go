@@ -933,6 +933,15 @@ func (user *User) UpdateWithTx(tx *gorm.DB, updatePassword bool) error {
 	if err = tx.First(&current, user.Id).Error; err != nil {
 		return err
 	}
+	if newUser.Email != "" {
+		newUser.Email = NormalizeEmail(newUser.Email)
+		if newUser.Email == "" {
+			return ErrAuthFlowInvalid
+		}
+		if err = ensureEmailAvailableWithTx(tx, newUser.Email, user.Id); err != nil {
+			return err
+		}
+	}
 	// Updates(struct) ignores zero values. Match that behavior when deciding
 	// whether this request actually changes authentication-sensitive state;
 	// partial self-profile updates intentionally leave role/status/group empty.
@@ -1194,14 +1203,18 @@ func (user *User) ValidateAndFill() (err error) {
 	if username == "" || password == "" {
 		return ErrUserEmptyCredentials
 	}
-	// find by username or email
-	err = DB.Where("username = ? OR email = ?", username, username).First(user).Error
+	// Email identifiers are case-insensitive, including legacy mixed-case rows.
+	// Keep username matching unchanged and reject ambiguous identities rather
+	// than authenticating whichever row happens to sort first.
+	var matches []User
+	err = DB.Where("username = ? OR LOWER(email) = ?", username, NormalizeEmail(username)).Limit(2).Find(&matches).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ErrInvalidCredentials
-		}
 		return fmt.Errorf("%w: %v", ErrDatabase, err)
 	}
+	if len(matches) != 1 {
+		return ErrInvalidCredentials
+	}
+	*user = matches[0]
 	if user.Password == "" {
 		return ErrInvalidCredentials
 	}

@@ -27,6 +27,7 @@ import { isLikelyHtml } from '@/lib/content-format'
 import { useAuthStore } from '@/stores/auth-store'
 
 import { CTA, Features, Hero, HowItWorks, Stats } from './components'
+import { ImageApiGuide } from './components/image-api-guide'
 import { useHomePageContent } from './hooks'
 
 export function Home() {
@@ -125,6 +126,9 @@ export function Home() {
       <Hero isAuthenticated={isAuthenticated} />
       <Stats />
       <Features />
+      <div className='mx-auto max-w-6xl px-6 pb-16'>
+        <ImageApiGuide />
+      </div>
       <HowItWorks />
       <CTA isAuthenticated={isAuthenticated} />
       <Footer />

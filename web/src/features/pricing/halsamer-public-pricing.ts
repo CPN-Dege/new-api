@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { getImageModel } from '../home/image-models'
 import { FOCUSED_MODELS } from '../home/public-branding'
 
 export const HALSAMER_PUBLIC_MODELS = FOCUSED_MODELS.map(
@@ -27,7 +28,11 @@ export function isHalsamerPublicModel(modelName: string): boolean {
 }
 
 export function selectHalsamerPublicModels<
-  T extends { model_name: string; enable_groups: string[] },
+  T extends {
+    model_name: string
+    enable_groups: string[]
+    supported_endpoint_types?: string[]
+  },
 >(models: T[]): T[] {
   return models
     .filter(
@@ -35,5 +40,15 @@ export function selectHalsamerPublicModels<
         isHalsamerPublicModel(model.model_name) &&
         model.enable_groups.includes('default')
     )
-    .map((model) => ({ ...model, enable_groups: ['default'] }))
+    .map((model) => ({
+      ...model,
+      enable_groups: ['default'],
+      ...(getImageModel(model.model_name) && model.supported_endpoint_types
+        ? {
+            supported_endpoint_types: model.supported_endpoint_types.filter(
+              (endpoint) => endpoint === 'image-generation'
+            ),
+          }
+        : {}),
+    }))
 }

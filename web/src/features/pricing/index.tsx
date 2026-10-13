@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { PublicLayout } from '@/components/layout'
 import { PageTransition } from '@/components/page-transition'
 
+import { ImageApiGuide } from '../home/components/image-api-guide'
 import {
   LoadingSkeleton,
   EmptyState,
@@ -197,7 +198,7 @@ export function Pricing() {
               {t('Model Square')}
             </h1>
             <p className='text-muted-foreground/80 mt-3 text-sm sm:mt-4 sm:text-base'>
-              {t('Four live models on the default group')}
+              {t('Four chat models and five image models on the default group')}
             </p>
             <p className='text-muted-foreground/60 mx-auto mt-2 max-w-2xl text-xs leading-relaxed sm:text-sm'>
               {t(
@@ -271,6 +272,10 @@ export function Pricing() {
 
               {renderPricingContent()}
             </main>
+          </div>
+
+          <div className='mt-10 border-t pt-8'>
+            <ImageApiGuide />
           </div>
 
           {selectedModel && (

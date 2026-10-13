@@ -29,7 +29,7 @@ export function HowItWorks() {
       num: '1',
       title: t('Configure'),
       desc: t(
-        'Add your API keys, set up channels and configure access permissions'
+        'Create a Halsamer API key in the console, select the default group, and ensure you have available quota'
       ),
       icon: <Settings className='size-6' strokeWidth={1.5} />,
     },
@@ -37,7 +37,7 @@ export function HowItWorks() {
       num: '2',
       title: t('Connect'),
       desc: t(
-        'Connect through OpenAI, Claude, Gemini, and other compatible API routes'
+        'Set https://api.halsamer.io/v1 as your OpenAI-compatible base URL; use the Images API for image models'
       ),
       icon: <Zap className='size-6' strokeWidth={1.5} />,
     },

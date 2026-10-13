@@ -36,12 +36,25 @@ vi.mock('react-i18next', () => ({
 }))
 
 describe('Halsamer public branding', () => {
-  it('renders four Live cards with exact IDs and responsive columns', () => {
+  it('publishes every selected image ID alongside the existing chat models', () => {
+    const ids = FOCUSED_MODELS.map((model) => model.modelId)
+    for (const id of [
+      'nano-banana-2',
+      'nano-banana-pro',
+      'gpt-image-2.5-sunburst',
+      'gpt-image-2.5-flare',
+      'gpt-image-2',
+    ]) {
+      expect(ids).toContain(id)
+    }
+    expect(new Set(ids).size).toBe(9)
+  })
+  it('renders nine Live cards with exact IDs and responsive columns', () => {
     const html = renderToStaticMarkup(createElement(Features))
     const host = document.createElement('div')
     host.innerHTML = html
     const cards = host.querySelectorAll('[data-model-id]')
-    expect(cards).toHaveLength(4)
+    expect(cards).toHaveLength(9)
     for (const model of FOCUSED_MODELS) {
       const card = host.querySelector(`[data-model-id="${model.modelId}"]`)
       expect(card?.textContent).toContain(model.name)
@@ -83,32 +96,45 @@ describe('Halsamer public branding', () => {
     )
   })
 
-  it('shows the four published models as Live with exact public IDs', () => {
+  it('shows the nine published models as Live with exact public IDs', () => {
     expect(FOCUSED_MODELS).toEqual([
       { name: 'GPT 5.6 Sol', status: 'Live', modelId: 'gpt-5.6-sol' },
       { name: 'GPT 6.1 Sol', status: 'Live', modelId: 'gpt-6.1-sol' },
       { name: 'GPT 6 Luna', status: 'Live', modelId: 'gpt-6-luna' },
       { name: 'GPT 6 Astra', status: 'Live', modelId: 'gpt-astra-6' },
+      { name: 'Nano Banana 2', status: 'Live', modelId: 'nano-banana-2' },
+      { name: 'Nano Banana Pro', status: 'Live', modelId: 'nano-banana-pro' },
+      {
+        name: 'GPT Image 2.5 Sunburst',
+        status: 'Live',
+        modelId: 'gpt-image-2.5-sunburst',
+      },
+      {
+        name: 'GPT Image 2.5 Flare',
+        status: 'Live',
+        modelId: 'gpt-image-2.5-flare',
+      },
+      { name: 'GPT Image 2', status: 'Live', modelId: 'gpt-image-2' },
     ])
   })
 
-  it('keeps statistics and landing copy aligned with four live models', () => {
+  it('keeps statistics and landing copy aligned with nine live models', () => {
     expect(FOCUSED_STATS).toEqual([
-      { value: 4, label: 'live AI models' },
+      { value: 9, label: 'live AI models' },
       { value: 1, label: 'unified API access' },
       { value: 1, label: 'usage dashboard' },
     ])
     expect(CORE_FEATURES_COPY).toEqual({
       eyebrow: 'Focused AI Access',
-      heading: 'Four live models,',
+      heading: 'Nine live models,',
       subheading: 'one API for your workflows',
     })
     expect(HERO_COPY).toEqual({
       heading: 'One API for',
-      modelLine: 'GPT Sol, Luna & Astra',
-      availabilityLine: 'Four models. All live.',
+      modelLine: 'GPT & Nano Banana',
+      availabilityLine: 'Four chat models. Five image models. All live.',
       description:
-        'Access four live models through Halsamer API with transparent pricing, clear usage tracking, and familiar OpenAI-compatible workflows.',
+        'Chat and generate images through Halsamer API with one key, transparent token pricing, and familiar OpenAI-compatible workflows.',
     })
     expect(
       JSON.stringify([

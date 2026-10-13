@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { IMAGE_MODELS } from './image-models'
+
 export type PublicNavItem = {
   title: 'Home' | 'Console' | 'Model Square' | 'Academy'
   href: string
@@ -52,9 +54,9 @@ export const SUPPORTED_APPLICATIONS_DESCRIPTION =
   'Supports one-click configuration and perfectly adapts to Halsamer API protocol configuration.'
 
 export type FocusedModel = {
-  name: 'GPT 5.6 Sol' | 'GPT 6.1 Sol' | 'GPT 6 Luna' | 'GPT 6 Astra'
+  name: string
   status: 'Live'
-  modelId: 'gpt-5.6-sol' | 'gpt-6.1-sol' | 'gpt-6-luna' | 'gpt-astra-6'
+  modelId: string
 }
 
 export const FOCUSED_MODELS: readonly FocusedModel[] = [
@@ -62,6 +64,11 @@ export const FOCUSED_MODELS: readonly FocusedModel[] = [
   { name: 'GPT 6.1 Sol', status: 'Live', modelId: 'gpt-6.1-sol' },
   { name: 'GPT 6 Luna', status: 'Live', modelId: 'gpt-6-luna' },
   { name: 'GPT 6 Astra', status: 'Live', modelId: 'gpt-astra-6' },
+  ...IMAGE_MODELS.map(({ name, modelId }) => ({
+    name,
+    modelId,
+    status: 'Live' as const,
+  })),
 ] as const
 
 export const FOCUSED_STATS = [
@@ -72,14 +79,14 @@ export const FOCUSED_STATS = [
 
 export const HERO_COPY = {
   heading: 'One API for',
-  modelLine: 'GPT Sol, Luna & Astra',
-  availabilityLine: 'Four models. All live.',
+  modelLine: 'GPT & Nano Banana',
+  availabilityLine: 'Four chat models. Five image models. All live.',
   description:
-    'Access four live models through Halsamer API with transparent pricing, clear usage tracking, and familiar OpenAI-compatible workflows.',
+    'Chat and generate images through Halsamer API with one key, transparent token pricing, and familiar OpenAI-compatible workflows.',
 } as const
 
 export const CORE_FEATURES_COPY = {
   eyebrow: 'Focused AI Access',
-  heading: 'Four live models,',
+  heading: 'Nine live models,',
   subheading: 'one API for your workflows',
 } as const

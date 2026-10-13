@@ -28,6 +28,7 @@ it('shows Halsamer endpoints and usable authentication examples for every protoc
   for (const [label, path] of [
     ['Chat', '/v1/chat/completions'],
     ['Responses', '/v1/responses'],
+    ['Images', '/v1/images/generations'],
     ['Claude', '/v1/messages'],
     ['Gemini', '/v1beta/models/gpt-6.1-sol:generateContent'],
   ]) {

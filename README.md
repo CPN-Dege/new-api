@@ -150,6 +150,8 @@ This README describes the current source tree. Check the release notes for the v
 
 ## Quick start
 
+For the Halsamer deployment, see the [Image API usage guide](./docs/halsamer-image-api.md) for its five published image models, `default` group access, client examples, pricing semantics, and qualified limitations.
+
 ### Try locally with Docker
 
 This starts a single instance with SQLite and binds it to localhost:

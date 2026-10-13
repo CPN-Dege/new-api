@@ -205,7 +205,7 @@ export function Features(_props: FeaturesProps) {
             >
               <div className='min-w-0'>
                 <span className='text-sm font-semibold'>{model.name}</span>
-                <code className='text-muted-foreground mt-1 block text-xs'>
+                <code className='text-muted-foreground mt-1 block text-xs break-all'>
                   {model.modelId}
                 </code>
               </div>

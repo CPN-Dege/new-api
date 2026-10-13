@@ -38,6 +38,8 @@ import {
 } from '@/components/data-table'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ImageApiGuide } from '@/features/home/components/image-api-guide'
+import { getImageModel } from '@/features/home/image-models'
 import { useStatus } from '@/hooks/use-status'
 
 import {
@@ -763,6 +765,9 @@ export function ModelDetailsApi(props: {
   model: PricingModel
   endpointMap: Record<string, { path?: string; method?: string }>
 }) {
+  if (getImageModel(props.model.model_name)) {
+    return <ImageApiGuide modelId={props.model.model_name} />
+  }
   return (
     <div className='space-y-6'>
       <CodeSamplesSection model={props.model} endpointMap={props.endpointMap} />
