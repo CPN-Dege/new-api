@@ -16,6 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import {
+  getImageModel,
+  IMAGE_BILLING_EXPRESSION,
+} from '../../home/image-models'
 import type { PricingModel } from '../types'
 import { hasTaskUsageSchema, isDynamicPricingModel } from './dynamic-price'
 import { isTokenBasedModel } from './model-helpers'
@@ -32,6 +36,12 @@ export function getBillingModeLabelKey(
   // Task-usage models badge as one business category; the metering unit
   // ($/1M token, $/credit, $/second) is already carried by the price line.
   if (hasTaskUsageSchema(model)) return 'Task billing'
+  if (
+    getImageModel(model.model_name) &&
+    model.billing_expr === IMAGE_BILLING_EXPRESSION
+  ) {
+    return 'Per Request'
+  }
   if (isDynamicPricingModel(model)) return 'Dynamic Pricing'
   if (isTokenBasedModel(model)) return 'Token-based'
   return 'Per Request'

@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { getImageModel } from '../home/image-models'
+import { getImageModel, IMAGE_BILLING_EXPRESSION } from '../home/image-models'
 import { FOCUSED_MODELS } from '../home/public-branding'
 
 export const HALSAMER_PUBLIC_MODELS = FOCUSED_MODELS.map(
@@ -32,6 +32,8 @@ export function selectHalsamerPublicModels<
     model_name: string
     enable_groups: string[]
     supported_endpoint_types?: string[]
+    billing_expr?: string
+    quota_type?: number
   },
 >(models: T[]): T[] {
   return models
@@ -43,6 +45,10 @@ export function selectHalsamerPublicModels<
     .map((model) => ({
       ...model,
       enable_groups: ['default'],
+      ...(getImageModel(model.model_name) &&
+      model.billing_expr === IMAGE_BILLING_EXPRESSION
+        ? { quota_type: 1 }
+        : {}),
       ...(getImageModel(model.model_name) && model.supported_endpoint_types
         ? {
             supported_endpoint_types: model.supported_endpoint_types.filter(

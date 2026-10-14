@@ -28,6 +28,9 @@ import {
   isHalsamerPublicModel,
   selectHalsamerPublicModels,
 } from '../halsamer-public-pricing'
+import { getBillingModeLabelKey } from '../lib/billing-mode'
+import { filterByQuotaType } from '../lib/filters'
+import type { PricingModel } from '../types'
 
 vi.mock('@/lib/nav-modules', () => ({
   getModuleAccessForGuard: vi.fn(async () => ({ enabled: true })),
@@ -99,6 +102,21 @@ vi.mock('react-i18next', () => ({
 }))
 
 describe('Halsamer public pricing', () => {
+  it('classifies the configured fixed image tariff as Per Request without changing native billing values', () => {
+    const image = {
+      model_name: 'nano-banana-2',
+      enable_groups: ['default'],
+      quota_type: 0,
+      billing_mode: 'tiered_expr',
+      billing_expr: 'tier("image", fixed(0.2)) * image_count',
+    } as PricingModel
+    const selected = selectHalsamerPublicModels([image])
+    expect(selected[0].quota_type).toBe(1)
+    expect(selected[0].billing_expr).toBe(image.billing_expr)
+    expect(getBillingModeLabelKey(selected[0])).toBe('Per Request')
+    expect(filterByQuotaType(selected, 'request')).toEqual(selected)
+    expect(image.quota_type).toBe(0)
+  })
   it('advertises only the qualified image endpoint for image models without changing source metadata', () => {
     const image = {
       model_name: 'nano-banana-2',

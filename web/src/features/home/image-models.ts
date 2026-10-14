@@ -16,6 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+export const IMAGE_BILLING_EXPRESSION =
+  'tier("image", fixed(0.2)) * image_count'
+
 export const IMAGE_MODELS = [
   {
     name: 'Nano Banana 2',
