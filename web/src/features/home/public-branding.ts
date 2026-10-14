@@ -82,7 +82,7 @@ export const HERO_COPY = {
   modelLine: 'GPT & Nano Banana',
   availabilityLine: 'Four chat models. Five image models. All live.',
   description:
-    'Chat and generate images through Halsamer API with one key, transparent token pricing, and familiar OpenAI-compatible workflows.',
+    'Chat and generate images through Halsamer API with one key, clear usage pricing, and familiar OpenAI-compatible workflows.',
 } as const
 
 export const CORE_FEATURES_COPY = {

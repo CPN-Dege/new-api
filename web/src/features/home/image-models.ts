@@ -20,6 +20,8 @@ export const IMAGE_MODELS = [
   {
     name: 'Nano Banana 2',
     modelId: 'nano-banana-2',
+    icon: 'Google.Color',
+    brand: 'Google',
     upstream: 'gemini-3.1-flash-image',
     description:
       'Flash-family image generation for everyday visual drafts, illustrations, and text-led compositions.',
@@ -27,6 +29,8 @@ export const IMAGE_MODELS = [
   {
     name: 'Nano Banana Pro',
     modelId: 'nano-banana-pro',
+    icon: 'Google.Color',
+    brand: 'Google',
     upstream: 'gemini-3-pro-image',
     description:
       'Pro-family image generation for detailed compositions and instruction-heavy creative work.',
@@ -34,6 +38,8 @@ export const IMAGE_MODELS = [
   {
     name: 'GPT Image 2.5 Sunburst',
     modelId: 'gpt-image-2.5-sunburst',
+    icon: 'OpenAI',
+    brand: 'OpenAI',
     upstream: 'gpt-image-2.5-sunburst',
     description:
       'A separately selectable GPT Image 2.5 variant. Generation is verified; a quality or speed advantage over Flare is not established.',
@@ -41,6 +47,8 @@ export const IMAGE_MODELS = [
   {
     name: 'GPT Image 2.5 Flare',
     modelId: 'gpt-image-2.5-flare',
+    icon: 'OpenAI',
+    brand: 'OpenAI',
     upstream: 'gpt-image-2.5-flare',
     description:
       'An alternative GPT Image 2.5 variant for your own prompt comparison. Generation is verified; no ranking against Sunburst is claimed.',
@@ -48,6 +56,8 @@ export const IMAGE_MODELS = [
   {
     name: 'GPT Image 2',
     modelId: 'gpt-image-2',
+    icon: 'OpenAI',
+    brand: 'OpenAI',
     upstream: 'gpt-image-2',
     description:
       'GPT-family image generation for illustrations, posters, and prompt-directed graphics. Uses the same Images API workflow.',

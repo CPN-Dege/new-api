@@ -29,7 +29,9 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import { AnimateInView } from '@/components/animate-in-view'
+import { getLobeIcon } from '@/lib/lobe-icon'
 
+import { getImageModel } from '../../image-models'
 import { CORE_FEATURES_COPY, FOCUSED_MODELS } from '../../public-branding'
 
 interface FeaturesProps {
@@ -203,7 +205,17 @@ export function Features(_props: FeaturesProps) {
               data-model-id={model.modelId}
               className='border-border/50 bg-muted/20 flex items-center justify-between gap-2 rounded-xl border px-4 py-3'
             >
-              <div className='min-w-0'>
+              <span
+                role='img'
+                aria-label={`${getImageModel(model.modelId)?.brand ?? 'OpenAI'} logo`}
+                className='shrink-0'
+              >
+                {getLobeIcon(
+                  getImageModel(model.modelId)?.icon ?? 'OpenAI',
+                  22
+                )}
+              </span>
+              <div className='min-w-0 flex-1'>
                 <span className='text-sm font-semibold'>{model.name}</span>
                 <code className='text-muted-foreground mt-1 block text-xs break-all'>
                   {model.modelId}

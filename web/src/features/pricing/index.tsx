@@ -202,7 +202,7 @@ export function Pricing() {
             </p>
             <p className='text-muted-foreground/60 mx-auto mt-2 max-w-2xl text-xs leading-relaxed sm:text-sm'>
               {t(
-                'Compare all Halsamer models in one table. Prices are in USD per 1M tokens.'
+                'Compare all Halsamer models in one table. Chat prices are per 1M tokens; image models cost US$0.20 per image.'
               )}
             </p>
             <SearchBar

@@ -60,6 +60,9 @@ describe('Halsamer public branding', () => {
       expect(card?.textContent).toContain(model.name)
       expect(card?.textContent).toContain(model.modelId)
       expect(card?.textContent).toContain('Live')
+      expect(
+        card?.querySelector('[role="img"]')?.getAttribute('aria-label')
+      ).toBe(model.modelId.startsWith('nano-') ? 'Google logo' : 'OpenAI logo')
     }
     expect(cards[0].parentElement?.classList.contains('sm:grid-cols-2')).toBe(
       true
@@ -134,7 +137,7 @@ describe('Halsamer public branding', () => {
       modelLine: 'GPT & Nano Banana',
       availabilityLine: 'Four chat models. Five image models. All live.',
       description:
-        'Chat and generate images through Halsamer API with one key, transparent token pricing, and familiar OpenAI-compatible workflows.',
+        'Chat and generate images through Halsamer API with one key, clear usage pricing, and familiar OpenAI-compatible workflows.',
     })
     expect(
       JSON.stringify([

@@ -84,10 +84,11 @@ These are illustrative client examples. The UI/docs verification does not submit
 
 ## Pricing and limits
 
-- Prices are token-based, **USD per 1M tokens**, not a fixed charge per image. Read each model's current Model Square breakdown and actual usage log.
-- The three GPT routes use their configured OpenRouter-reference pricing without markup.
-- By the Founder's decision, both Nano Banana routes use the GPT Image 2 pricing expression: text input 5, cached text input 1.25, image input 8, cached image input 2, output 30 USD per 1M reported tokens. Applicable categories depend on the upstream usage report.
-- Aotian does not separate text/image output tokens for Nano. **All reported Nano output tokens use the output rate. This is not parity with official Nano Banana pricing.** Cache billing and the revised Nano settlement have not received an additional live paid test.
+- All five image models cost **US$0.20 per image** in the `default` group, with no additional input/output token charges. The request total is US$0.20 multiplied by the billed image count: one image costs US$0.20; two cost US$0.40.
+- Native billing expression: `tier("image", fixed(0.2)) * image_count`. Image quantity is validated and settled by New API; this is not one flat fee for an unlimited number of images.
+- This Founder-selected fixed tariff replaces the previous token-based image prices and Nano/GPT parity decision. Chat pricing is unchanged. Inspect Model Square and usage logs for the active tariff and actual charge.
+- Google logos identify both Nano Banana routes; OpenAI logos identify the GPT Image routes. All remain served through the configured Aotian provider; a logo is not upstream provenance proof.
+- Native expression and configuration readback are verified without another paid generation. A fresh live charge under this revised tariff has not been tested.
 - Reference edits, 4K, streaming, and multiple images remain unqualified on these exact routes. The native README lists `/v1/images/edits` separately; a source-level route is not a successful provider test. Do not put guessed reference-image fields on the generation endpoint.
 - A timeout can occur after upstream dispatch. Check usage logs before retrying. The examples disable automatic SDK retries; a fresh request may create another image and charge.
 

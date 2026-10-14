@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { CopyButton } from '@/components/copy-button'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getLobeIcon } from '@/lib/lobe-icon'
 
 import {
   getImageModel,
@@ -70,7 +71,19 @@ export function ImageApiGuide(props: { modelId?: string }) {
         </div>
       )}
       <div className='rounded-lg border p-4'>
-        <h3 className='font-semibold'>{model.name}</h3>
+        <h3
+          aria-label={model.name}
+          className='flex items-center gap-2 font-semibold'
+        >
+          <span
+            role='img'
+            aria-label={`${model.brand} logo`}
+            className='shrink-0'
+          >
+            {getLobeIcon(model.icon, 22)}
+          </span>
+          {model.name}
+        </h3>
         <code className='mt-1 block text-xs break-all'>{model.modelId}</code>
         <p className='text-muted-foreground mt-2 text-sm'>
           {t(model.description)}
@@ -97,7 +110,7 @@ export function ImageApiGuide(props: { modelId?: string }) {
         </li>
         <li>
           {t(
-            'Decode data[0].b64_json to save the image. Check usage and the actual charge in the console logs; an image does not have a fixed per-picture price.'
+            'Decode data[0].b64_json to save the image. Check the billed image count and actual charge in the console logs.'
           )}
         </li>
       </ol>
@@ -140,12 +153,12 @@ export function ImageApiGuide(props: { modelId?: string }) {
         </p>
         <p>
           {t(
-            'Nano Banana 2 and Pro use the GPT Image 2 pricing scheme. The provider does not separate their text and image output tokens, so all reported output tokens use the output rate. This is not official Nano Banana price parity.'
+            'All five image models cost US$0.20 per image in the default group. There are no additional input or output token charges for these image requests.'
           )}
         </p>
         <p>
           {t(
-            'Model Square prices are token-based, in USD per 1M tokens. Use the selected model’s current pricing breakdown, not another model’s rate.'
+            'The request total is US$0.20 multiplied by the billed image count. One image costs US$0.20; two cost US$0.40. Chat model pricing is unchanged.'
           )}
         </p>
         <p>

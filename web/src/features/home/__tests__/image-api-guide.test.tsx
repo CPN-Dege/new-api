@@ -57,9 +57,16 @@ it('selects all five exact IDs and copies their bounded image requests', async (
   expect(
     screen.getByText(/Reference editing, 4K, streaming/)
   ).toHaveTextContent('have not been qualified')
-  expect(screen.getByText(/Nano Banana 2 and Pro use/)).toHaveTextContent(
-    'all reported output tokens'
+  expect(screen.getByText(/All five image models cost/)).toHaveTextContent(
+    'US$0.20 per image'
   )
+  expect(screen.getByText(/The request total/)).toHaveTextContent(
+    'US$0.20 multiplied by the billed image count'
+  )
+  expect(
+    screen.queryByText(/all reported output tokens/)
+  ).not.toBeInTheDocument()
+  expect(screen.getByRole('img', { name: 'OpenAI logo' })).toBeInTheDocument()
 })
 
 it('uses the image guide rather than chat or invented rate parameters in model details', () => {
