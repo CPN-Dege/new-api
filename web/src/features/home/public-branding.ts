@@ -79,8 +79,8 @@ export const FOCUSED_STATS = [
 
 export const HERO_COPY = {
   heading: 'One API for',
-  modelLine: 'GPT & Nano Banana',
-  availabilityLine: 'Four chat models. Five image models. All live.',
+  modelLines: ['Frontier Model', 'Image Generation', 'Everythings'],
+  availabilityLine: 'Frontier Models. All live',
   description:
     'Chat and generate images through Halsamer API with one key, clear usage pricing, and familiar OpenAI-compatible workflows.',
 } as const

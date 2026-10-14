@@ -30,6 +30,7 @@ import {
   SUPPORTED_APPLICATIONS_DESCRIPTION,
 } from '../../public-branding'
 import { HeroTerminalDemo } from '../hero-terminal-demo'
+import { RotatingHeadline } from '../rotating-headline'
 
 interface HeroProps {
   className?: string
@@ -125,9 +126,7 @@ export function Hero(props: HeroProps) {
           >
             {t(HERO_COPY.heading)}
             <br />
-            <span className='bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent'>
-              {HERO_COPY.modelLine}
-            </span>
+            <RotatingHeadline />
           </h1>
           <p
             className='landing-animate-fade-up mt-3 text-sm font-medium text-blue-600 opacity-0 dark:text-blue-300'
