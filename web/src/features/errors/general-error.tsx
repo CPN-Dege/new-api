@@ -47,12 +47,22 @@ export function GeneralError({
   const { history } = useRouter()
   const status = getHttpStatus(error)
   const isRateLimited = status === 429
+  const isStaleChunk =
+    error instanceof Error &&
+    (error.name === 'ChunkLoadError' ||
+      /Failed to fetch dynamically imported module|Importing a module script failed/.test(
+        error.message
+      ))
   const title = isRateLimited
     ? t('Too many requests')
     : `${t('Oops! Something went wrong')} ${`:')`}`
-  const description = isRateLimited
-    ? t('Please wait a moment before trying again.')
-    : t('Please try again later.')
+  let description = t('Please try again later.')
+  if (isRateLimited) {
+    description = t('Please wait a moment before trying again.')
+  }
+  if (isStaleChunk) {
+    description = t('A new version is available. Reload this page to continue.')
+  }
 
   return (
     <div className={cn('h-svh w-full', className)}>
@@ -66,6 +76,11 @@ export function GeneralError({
         <p className='text-muted-foreground text-center'>
           {t('We apologize for the inconvenience.')} <br /> {description}
         </p>
+        {isStaleChunk && (
+          <Button className='min-h-11' onClick={() => window.location.reload()}>
+            {t('Reload page')}
+          </Button>
+        )}
         {!minimal && (
           <p className='text-muted-foreground text-center text-sm'>
             {t('If this keeps happening, please report it on GitHub Issues.')}
