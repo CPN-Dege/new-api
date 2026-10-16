@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "status": "PASS_CLOSED",
+  "public_url": "https://api.halsamer.io/",
+  "version": "v1.0.0-rc.40-halsamer-hidedocs1",
+  "source_commit": "72164e07a243465677983149f11544b679b5b39c",
+  "source_branch": "stewarden/frontier-storefront-20261015",
+  "artifact_sha256": "688cf3167c796025dd4ba208fc794618587a591ce3d67fbfac095a945f633c8f",
+  "deployed_at": "2026-10-16T21:00:37.307722+07:00",
+  "founder_closed_at": "2026-10-16T21:27:59.467132+07:00",
+  "source_files": 2577,
+  "source_manifest": "source-manifest.json",
+  "rollback_used": false,
+  "worker_exit": 0,
+  "scope": {
+    "hero": "One API for",
+    "phrases": [
+      "Frontier Model",
+      "Image Generation",
+      "Everythings"
+    ],
+    "tagline": "Frontier Models. All live",
+    "animation": "right-to-left character deletion, brief pause, left-to-right typing",
+    "color": "light-saber blue to deep blue; breathing LED glow",
+    "docs_cta": "hidden in hero on mobile and desktop",
+    "model_count": 9,
+    "chat_models": [
+      "gpt-5.6-sol",
+      "gpt-6.1-sol",
+      "gpt-6-luna",
+      "gpt-astra-6"
+    ],
+    "image_models": [
+      "nano-banana-2",
+      "nano-banana-pro",
+      "gpt-image-2",
+      "gpt-image-2.5-flare",
+      "gpt-image-2.5-sunburst"
+    ],
+    "image_price_usd_per_image": 0.2,
+    "image_provider_icons": [
+      "Google.Color",
+      "OpenAI"
+    ],
+    "model_square": "search/filter/provider and endpoint search",
+    "home_override_empty": true
+  },
+  "verification": {
+    "origin_http": 200,
+    "public_http": 200,
+    "desktop": [
+      1920,
+      947
+    ],
+    "mobile": [
+      390,
+      844
+    ],
+    "docs_display": "none",
+    "docs_rectangles": 0,
+    "catalog_equal_across_release": true,
+    "source_changes_for_last_release": "hero display classes only; backend unchanged",
+    "final_release_tests": "NOT_RERUN_FOUNDER_REQUEST",
+    "prior_blueled_frontend_tests": {
+      "status": "PASS_AGGREGATED",
+      "tests": 2128,
+      "files": 177,
+      "failure": 0,
+      "skip": 0,
+      "note": "Prior blueled1 source, not a rerun on Docs change; initial outer timeout retained, completed+remaining results aggregated"
+    },
+    "review": "main agent only; not independent review"
+  },
+  "ripwire": {
+    "indexed_files": 2479,
+    "symbols": 24109,
+    "edges": 31709,
+    "ranked_shown": 200,
+    "ambiguous": 1317,
+    "unresolved": 6047,
+    "skipped_oversize": 7,
+    "cold_cache_restore_equal": true,
+    "hero_and_headline_source_body_match": true,
+    "precision": "native heuristic graph; not SCIP or test coverage proof"
+  },
+  "evidence_sha256": {
+    "CUTOVER-RESULT.json": "5cdbdab28e570ec5f6029225d55e3c2f284730cd11d6935c61bf3d437ae97559",
+    "LIVE-EXIT.json": "2da52352cb9c363b11eeb73eb8d360cb1e140e28eebef18c9dc91a18ff4bab1b",
+    "FOUNDER-CLOSURE.json": "64ab9aa60f3f2aa0264c92ffebdade0ac8a60e4def68a18a7b3d6f14df1696c7",
+    "acceptance/RESULT.json": "56b2c17c8b5fb86904e57fb606f6ce9c92e9bf6eb8d77fb0d40af4d27927eaf6"
+  },
+  "excluded": [
+    "runtime credentials and sessions",
+    "databases and account/channel inventories",
+    "private Compose/environment values",
+    "raw logs and ephemeral operator launchers",
+    "binary and node_modules",
+    "paused Student candidate worktrees"
+  ],
+  "limits": [
+    "source and sanitized release record, not full private-service disaster recovery",
+    "no new paid inference or account data audit",
+    "no global resolution of earlier unrelated audit findings",
+    "no new deployment/build/test or tag-triggered automation in publication task"
+  ]
+}
