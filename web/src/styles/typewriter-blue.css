@@ -1,0 +1,63 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+/* Blue LED treatment is scoped to the approved rotating headline only. */
+.hls-typewriter-blue {
+  background-image: linear-gradient(
+    100deg,
+    #0087bd 0%,
+    #087ded 42%,
+    #123eae 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: hls-blue-breath 3.6s ease-in-out infinite;
+}
+
+.dark .hls-typewriter-blue {
+  background-image: linear-gradient(
+    100deg,
+    #7ee8ff 0%,
+    #279aff 42%,
+    #195bea 100%
+  );
+}
+
+@keyframes hls-blue-breath {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 1px rgb(49 174 255 / 12%))
+      drop-shadow(0 0 5px rgb(24 107 255 / 8%));
+  }
+  50% {
+    filter: drop-shadow(0 0 3px rgb(89 211 255 / 60%))
+      drop-shadow(0 0 12px rgb(24 107 255 / 36%));
+  }
+}
+
+[data-motion='paused'] > .hls-typewriter-blue {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hls-typewriter-blue {
+    animation: none;
+    filter: none;
+  }
+}

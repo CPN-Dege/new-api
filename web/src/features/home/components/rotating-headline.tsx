@@ -16,49 +16,105 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useMediaQuery } from '@/hooks/use-media-query'
-import { cn } from '@/lib/utils'
 
 import { HERO_COPY } from '../public-branding'
 
-// Keep every phrase in the same grid cell so the longest phrase reserves space.
-// Existing page transitions cannot rotate inline text without layout shifts.
+import '@/styles/typewriter-blue.css'
+
+// Invisible full phrases reserve the same space, even during the empty beat.
 export function RotatingHeadline() {
   const { t } = useTranslation()
-  const [index, setIndex] = useState(0)
+  const root = useRef<HTMLSpanElement>(null)
+  const [text, setText] = useState(() => t(HERO_COPY.modelLines[0]))
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
   useEffect(() => {
+    const phrases = HERO_COPY.modelLines.map((line) => [...t(line)])
+    setText(phrases[0].join(''))
     if (reducedMotion) return
-    const timer = window.setInterval(() => {
-      setIndex((current) => (current + 1) % HERO_COPY.modelLines.length)
-    }, 3200)
-    return () => window.clearInterval(timer)
-  }, [reducedMotion])
+
+    let index = 0
+    let length = phrases[0].length
+    let deleting = true
+    let delay = 1800
+    let inView = true
+    let timer: number | undefined
+
+    function schedule() {
+      window.clearTimeout(timer)
+      const paused = document.hidden || !inView
+      if (root.current) {
+        root.current.dataset.motion = paused ? 'paused' : 'running'
+      }
+      if (paused) return
+      timer = window.setTimeout(tick, delay)
+    }
+
+    function tick() {
+      if (deleting) {
+        length--
+        setText(phrases[index].slice(0, length).join(''))
+        delay = 18
+        if (length === 0) {
+          index = (index + 1) % phrases.length
+          deleting = false
+          delay = 160
+        }
+      } else {
+        length++
+        setText(phrases[index].slice(0, length).join(''))
+        delay = 32
+        if (length === phrases[index].length) {
+          deleting = true
+          delay = 1800
+        }
+      }
+      schedule()
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting
+      schedule()
+    })
+    if (root.current) observer.observe(root.current)
+    document.addEventListener('visibilitychange', schedule)
+    schedule()
+    return () => {
+      window.clearTimeout(timer)
+      observer.disconnect()
+      document.removeEventListener('visibilitychange', schedule)
+    }
+  }, [t, reducedMotion])
 
   return (
-    <span className='inline-grid max-w-full align-top'>
+    <span
+      ref={root}
+      data-motion={reducedMotion ? 'paused' : undefined}
+      className='inline-grid max-w-full align-top'
+    >
       <span className='sr-only'>
         {HERO_COPY.modelLines.map((line) => t(line)).join(', ')}
       </span>
-      {HERO_COPY.modelLines.map((line, i) => (
+      {HERO_COPY.modelLines.map((line) => (
         <span
           key={line}
           aria-hidden='true'
-          data-active={index === i}
-          className={cn(
-            'col-start-1 row-start-1 bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent transition-[opacity,transform] duration-500 motion-reduce:transition-none',
-            index === i
-              ? 'translate-y-0 opacity-100'
-              : 'translate-y-2 opacity-0'
-          )}
+          className='invisible col-start-1 row-start-1'
         >
           {t(line)}
         </span>
       ))}
+      <span
+        aria-hidden='true'
+        data-active='true'
+        className='hls-typewriter-blue col-start-1 row-start-1'
+      >
+        {reducedMotion ? t(HERO_COPY.modelLines[0]) : text}
+      </span>
     </span>
   )
 }
